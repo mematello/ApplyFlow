@@ -42,12 +42,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const body = await req.json();
     const parsedData = PatchSchema.parse(body);
 
+    const { data: existingApp, error: fetchError } = await supabase
+      .from('applications')
+      .select('next_action_date')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (fetchError) {
+      return NextResponse.json({ error: fetchError.message }, { status: 400 });
+    }
+
+    const payloadToUpdate: any = {
+      ...parsedData,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (parsedData.next_action_date !== undefined && parsedData.next_action_date !== existingApp.next_action_date) {
+      payloadToUpdate.next_action_reminder_sent = false;
+    }
+
     const { data, error } = await supabase
       .from('applications')
-      .update({
-        ...parsedData,
-        updated_at: new Date().toISOString(),
-      })
+      .update(payloadToUpdate)
       .eq('id', id)
       .eq('user_id', user.id) // Explicit safety check to restrict update to row owner
       .select()
