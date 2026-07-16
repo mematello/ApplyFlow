@@ -103,19 +103,29 @@ Example Output:
     // Try 1
     try {
       rawJsonText = await performExtraction(systemInstruction1);
-      const cleanedText = rawJsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      const firstBrace = rawJsonText.indexOf('{');
+      const lastBrace = rawJsonText.lastIndexOf('}');
+      if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON object found in response");
+      const cleanedText = rawJsonText.slice(firstBrace, lastBrace + 1);
       parsedData = JSON.parse(cleanedText);
       const validated = JobExtractionSchema.parse(parsedData);
       return NextResponse.json({ data: validated });
     } catch (error1: any) {
+      console.error("[Extract API] Attempt 1 failed:", error1.message);
+      console.error("[Extract API] Raw text from model:", rawJsonText);
       // Try 2
       try {
         rawJsonText = await performExtraction(systemInstruction2);
-        const cleanedText = rawJsonText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        const firstBrace = rawJsonText.indexOf('{');
+        const lastBrace = rawJsonText.lastIndexOf('}');
+        if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON object found in response");
+        const cleanedText = rawJsonText.slice(firstBrace, lastBrace + 1);
         parsedData = JSON.parse(cleanedText);
         const validated = JobExtractionSchema.parse(parsedData);
         return NextResponse.json({ data: validated });
       } catch (error2: any) {
+        console.error("[Extract API] Attempt 2 failed:", error2.message);
+        console.error("[Extract API] Raw text from model:", rawJsonText);
         // Return 422 on second failure
         return NextResponse.json(
           {
