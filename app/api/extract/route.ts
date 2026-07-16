@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { JobExtractionSchema } from '../../../lib/schemas/extraction';
+import { createClient } from '../../../lib/supabase/server';
 
 // Initialize the Google Gen AI client inside the POST handler
 // to prevent module-level crashes if the environment variable is missing
@@ -28,6 +29,16 @@ const geminiSchema = {
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (!user || authError) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Please authenticate to use this API.' },
+        { status: 401 }
+      );
+    }
+
     if (!ai) {
       if (!process.env.GEMINI_API_KEY) {
         return NextResponse.json({ error: 'GEMINI_API_KEY is not set. Please check your .env.local file and restart the dev server.', partialData: null }, { status: 500 });
