@@ -3,9 +3,9 @@ import { createServiceClient } from '../supabase/serviceClient';
 // NOTE: Google's free-tier model lineup changes frequently in 2026.
 // This list should be treated as something to revisit periodically, not a permanent config.
 export const AI_MODELS = [
-  { name: 'gemini-3-flash-preview', dailyLimit: 1500, description: 'Default, ~1500/day free tier' },
-  { name: 'gemini-3.1-flash-lite-preview', dailyLimit: 1500, description: 'Secondary/faster fallback' },
-  { name: 'gemini-3.5-flash', dailyLimit: 20, description: 'Most capable but only 20/day limit' }
+  { name: 'gemini-3.5-flash', dailyLimit: 20, description: 'Default/Most capable, but only 20/day limit' },
+  { name: 'gemini-3-flash-preview', dailyLimit: 1500, description: 'Primary fallback, ~1500/day free tier' },
+  { name: 'gemini-3.1-flash-lite-preview', dailyLimit: 1500, description: 'Last resort/faster fallback' }
 ];
 
 export class AllModelsExhaustedError extends Error {

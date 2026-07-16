@@ -60,9 +60,9 @@ Because AI API quotas can be exhausted during heavy testing or bulk application 
 The system tracks daily request counts for each Gemini model in the database (`ai_model_usage` table). If the primary model hits a `429 Quota Exceeded` error, the system records the exact block time and automatically falls back to secondary models seamlessly. This ensures uninterrupted extraction and matching without needing manual intervention. You can configure your preferred primary model directly in the app's settings.
 
 The current fallback chain is:
-1. `gemini-3-flash-preview` (Primary, ~1500 req/day)
-2. `gemini-3.1-flash-lite-preview` (Secondary fallback, ~1500 req/day)
-3. `gemini-3.5-flash` (Last resort, capped at 20 req/day)
+1. `gemini-3.5-flash` (Primary/Default, capped at 20 req/day)
+2. `gemini-3-flash-preview` (Fallback, ~1500 req/day)
+3. `gemini-3.1-flash-lite-preview` (Last resort, ~1500 req/day)
 
 ## Roadmap (Phase 2+)
 
