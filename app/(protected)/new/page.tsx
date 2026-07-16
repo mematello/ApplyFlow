@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "../../../lib/supabase/client";
+import ResumePreviewModal from "../../../components/ResumePreviewModal";
 
 export default function NewApplicationPage() {
   const router = useRouter();
@@ -33,6 +35,29 @@ export default function NewApplicationPage() {
   });
   
   const [techInput, setTechInput] = useState("");
+  const [resumes, setResumes] = useState<{ id: string, version_label: string, is_current: boolean }[]>([]);
+  const [previewResumeId, setPreviewResumeId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchResumes = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('resumes')
+        .select('id, version_label, is_current')
+        .eq('user_id', user.id);
+        
+      if (data) {
+        setResumes(data);
+        const current = data.find(r => r.is_current);
+        if (current) {
+          setFormData(prev => ({ ...prev, resume_version: current.version_label }));
+        }
+      }
+    };
+    fetchResumes();
+  }, []);
 
   const handleExtract = async () => {
     if (!jobDescription) return;
@@ -254,7 +279,14 @@ export default function NewApplicationPage() {
 
             <div>
               <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Resume Version</label>
-              <input type="text" name="resume_version" value={formData.resume_version} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+              <div className="flex gap-2">
+                <input type="text" name="resume_version" value={formData.resume_version} onChange={handleInputChange} className="flex-1 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+                {resumes.find(r => r.version_label === formData.resume_version) && (
+                  <button type="button" onClick={() => setPreviewResumeId(resumes.find(r => r.version_label === formData.resume_version)!.id)} className="px-3 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded border border-gray-300 dark:border-zinc-700 text-sm font-medium transition-colors">
+                    Preview
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -302,6 +334,8 @@ export default function NewApplicationPage() {
           </button>
         </div>
       </form>
+
+      <ResumePreviewModal resumeId={previewResumeId} onClose={() => setPreviewResumeId(null)} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import DashboardClient from './DashboardClient';
 import Link from 'next/link';
 import LogoutButton from '../../../components/LogoutButton';
+import { Settings } from 'lucide-react';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -43,11 +44,11 @@ export default async function DashboardPage() {
       <div className="max-w-6xl mx-auto p-4 md:p-8 text-gray-900 dark:text-zinc-100">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Welcome, {firstName}!</h1>
-          <div className="flex items-center gap-6">
-            <LogoutButton />
-            <Link href="/settings" className="px-4 py-2 bg-gray-200 dark:bg-zinc-800 hover:bg-gray-300 dark:hover:bg-zinc-700 text-gray-800 dark:text-zinc-200 rounded-md font-medium transition-colors shadow-sm">
-              Settings
+          <div className="flex items-center gap-4">
+            <Link href="/settings" className="p-2 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors" title="Settings">
+              <Settings className="w-5 h-5" />
             </Link>
+            <LogoutButton />
           </div>
         </div>
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
@@ -67,11 +68,11 @@ export default async function DashboardPage() {
     <div className="max-w-6xl mx-auto p-4 md:p-8 text-gray-900 dark:text-zinc-100">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Welcome, {firstName}!</h1>
-        <div className="flex items-center gap-6">
-          <LogoutButton />
-          <Link href="/settings" className="px-4 py-2 bg-gray-200 dark:bg-zinc-800 hover:bg-gray-300 dark:hover:bg-zinc-700 text-gray-800 dark:text-zinc-200 rounded-md font-medium transition-colors shadow-sm">
-            Settings
+        <div className="flex items-center gap-4">
+          <Link href="/settings" className="p-2 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors" title="Settings">
+            <Settings className="w-5 h-5" />
           </Link>
+          <LogoutButton />
           <Link href="/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-sm">
             + New Application
           </Link>

@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { createClient } from '../../../../lib/supabase/client';
+import ResumePreviewModal from '../../../../components/ResumePreviewModal';
+
+import { ArrowLeft } from 'lucide-react';
 
 export default function ApplicationDetailClient({ initialApplication }: { initialApplication: any }) {
   const router = useRouter();
@@ -38,6 +42,26 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const [resumes, setResumes] = useState<{ id: string, version_label: string }[]>([]);
+  const [previewResumeId, setPreviewResumeId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchResumes = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('resumes')
+        .select('id, version_label')
+        .eq('user_id', user.id);
+        
+      if (data) {
+        setResumes(data);
+      }
+    };
+    fetchResumes();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -124,7 +148,9 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <Link href="/dashboard" className="text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:text-zinc-100 mb-2 inline-block transition-colors">&larr; Back to Dashboard</Link>
+          <Link href="/dashboard" className="text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 mb-2 flex items-center gap-2 transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+          </Link>
           <h1 className="text-3xl font-bold">{formData.role} at {formData.company_name}</h1>
         </div>
         <button
@@ -201,7 +227,17 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
             <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Date Applied</label><input type="date" name="date_applied" value={formData.date_applied} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
             <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Next Action</label><input type="text" name="next_action" value={formData.next_action} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
             <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Next Action Date</label><input type="date" name="next_action_date" value={formData.next_action_date} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
-            <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Resume Version</label><input type="text" name="resume_version" value={formData.resume_version} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
+            <div>
+              <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Resume Version</label>
+              <div className="flex gap-2">
+                <input type="text" name="resume_version" value={formData.resume_version} onChange={handleInputChange} className="flex-1 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+                {resumes.find(r => r.version_label === formData.resume_version) && (
+                  <button type="button" onClick={() => setPreviewResumeId(resumes.find(r => r.version_label === formData.resume_version)!.id)} className="px-3 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded border border-gray-300 dark:border-zinc-700 text-sm font-medium transition-colors">
+                    Preview
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-2 mt-6">
             <input type="checkbox" id="cover_letter_sent" name="cover_letter_sent" checked={formData.cover_letter_sent} onChange={handleInputChange} className="w-4 h-4 rounded bg-white dark:bg-zinc-900 border-gray-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500" />
@@ -240,6 +276,8 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
           </button>
         </div>
       </form>
+
+      <ResumePreviewModal resumeId={previewResumeId} onClose={() => setPreviewResumeId(null)} />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChevronUp, ChevronDown, Search } from 'lucide-react';
 
 type Application = any; // Will use any for now to flexibly map from db schema
 
@@ -19,6 +20,7 @@ export default function DashboardClient({ initialApplications }: { initialApplic
   const router = useRouter();
   const [applications, setApplications] = useState<Application[]>(initialApplications);
   const [filter, setFilter] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortField, setSortField] = useState<string>("date_applied");
   const [sortAsc, setSortAsc] = useState<boolean>(false); // false = descending by default
 
@@ -64,8 +66,18 @@ export default function DashboardClient({ initialApplications }: { initialApplic
     }
   };
 
-  // Derived state: Filter
-  const filteredApps = filter === "All" ? applications : applications.filter(a => a.status === filter);
+  // Derived state: Filter (Status + Search)
+  let filteredApps = applications;
+  if (filter !== "All") {
+    filteredApps = filteredApps.filter(a => a.status === filter);
+  }
+  if (searchQuery.trim() !== "") {
+    const q = searchQuery.toLowerCase();
+    filteredApps = filteredApps.filter(a => 
+      (a.company_name?.toLowerCase().includes(q)) || 
+      (a.role?.toLowerCase().includes(q))
+    );
+  }
   
   // Derived state: Sort
   const sortedApps = [...filteredApps].sort((a, b) => {
@@ -76,6 +88,9 @@ export default function DashboardClient({ initialApplications }: { initialApplic
       const pmap: any = { 'high': 3, 'medium': 2, 'low': 1, null: 0, '': 0 };
       valA = pmap[valA] || 0;
       valB = pmap[valB] || 0;
+    } else if (sortField === 'company_name' || sortField === 'role') {
+      valA = (valA || "").toLowerCase();
+      valB = (valB || "").toLowerCase();
     } else {
       valA = valA || "";
       valB = valB || "";
@@ -86,21 +101,45 @@ export default function DashboardClient({ initialApplications }: { initialApplic
     return 0;
   });
 
+  const SortIcon = ({ field }: { field: string }) => {
+    if (sortField !== field) return <span className="w-4 h-4 inline-block opacity-0 group-hover:opacity-30 transition-opacity"><ChevronDown className="w-4 h-4" /></span>;
+    return (
+      <span className="w-4 h-4 inline-block text-gray-900 dark:text-zinc-200">
+        {sortAsc ? <ChevronUp className="w-4 h-4 animate-in fade-in zoom-in duration-200" /> : <ChevronDown className="w-4 h-4 animate-in fade-in zoom-in duration-200" />}
+      </span>
+    );
+  };
+
   return (
     <div>
-      {/* Filter Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {['All', 'draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn'].map(status => (
-          <button
-            key={status}
-            onClick={() => setFilter(status)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filter === status ? 'bg-gray-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-200 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
-            }`}
-          >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </button>
-        ))}
+      {/* Search & Filter */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6 items-start md:items-center justify-between">
+        <div className="relative w-full md:w-72">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search company or role..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-4 py-2 w-full rounded-md border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none transition-colors shadow-sm"
+          />
+        </div>
+        
+        <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto hide-scrollbar">
+          {['All', 'draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn'].map(status => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                filter === status ? 'bg-gray-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-200 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
+              }`}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Table Container */}
@@ -108,22 +147,32 @@ export default function DashboardClient({ initialApplications }: { initialApplic
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead className="bg-gray-50 dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800">
             <tr>
-              <th className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400">Company</th>
-              <th className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400">Role</th>
-              <th className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400">Status</th>
               <th 
-                className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400 cursor-pointer hover:text-gray-900 dark:hover:text-zinc-200 select-none transition-colors"
+                className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400 cursor-pointer hover:text-gray-900 dark:hover:text-zinc-200 select-none transition-colors group whitespace-nowrap"
+                onClick={() => handleSort('company_name')}
+              >
+                <div className="flex items-center gap-1">Company <SortIcon field="company_name" /></div>
+              </th>
+              <th 
+                className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400 cursor-pointer hover:text-gray-900 dark:hover:text-zinc-200 select-none transition-colors group whitespace-nowrap"
+                onClick={() => handleSort('role')}
+              >
+                <div className="flex items-center gap-1">Role <SortIcon field="role" /></div>
+              </th>
+              <th className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400 whitespace-nowrap">Status</th>
+              <th 
+                className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400 cursor-pointer hover:text-gray-900 dark:hover:text-zinc-200 select-none transition-colors group whitespace-nowrap"
                 onClick={() => handleSort('date_applied')}
               >
-                Date Applied {sortField === 'date_applied' && (sortAsc ? '↑' : '↓')}
+                <div className="flex items-center gap-1">Date Applied <SortIcon field="date_applied" /></div>
               </th>
               <th 
-                className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400 cursor-pointer hover:text-gray-900 dark:hover:text-zinc-200 select-none transition-colors"
+                className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400 cursor-pointer hover:text-gray-900 dark:hover:text-zinc-200 select-none transition-colors group whitespace-nowrap"
                 onClick={() => handleSort('priority')}
               >
-                Priority {sortField === 'priority' && (sortAsc ? '↑' : '↓')}
+                <div className="flex items-center gap-1">Priority <SortIcon field="priority" /></div>
               </th>
-              <th className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400">Next Action Date</th>
+              <th className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400 whitespace-nowrap">Next Action Date</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
@@ -131,7 +180,7 @@ export default function DashboardClient({ initialApplications }: { initialApplic
               <tr 
                 key={app.id} 
                 onClick={() => handleRowClick(app.id)}
-                className="hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer group"
+                className="hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all duration-150 cursor-pointer group animate-in fade-in"
               >
                 <td className="p-4 font-medium text-gray-900 dark:text-zinc-100">{app.company_name}</td>
                 <td className="p-4 text-gray-600 dark:text-zinc-300">{app.role}</td>
@@ -176,9 +225,9 @@ export default function DashboardClient({ initialApplications }: { initialApplic
               </tr>
             ))}
             {sortedApps.length === 0 && (
-              <tr>
+              <tr className="animate-in fade-in">
                 <td colSpan={6} className="p-12 text-center text-gray-500 dark:text-zinc-400">
-                  No applications match the "{filter}" filter.
+                  {searchQuery ? "No applications found matching your search and filter." : "No applications match the current filter."}
                 </td>
               </tr>
             )}
