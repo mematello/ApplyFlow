@@ -103,11 +103,11 @@ export default function SettingsClient({
   };
 
   return (
-    <div className="space-y-10 pb-24">
+    <div className="space-y-6 pb-24">
       {/* Profile Section */}
       <section className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">
         <h2 className="text-xl font-semibold mb-6 border-b border-gray-200 dark:border-zinc-800 pb-4">Profile</h2>
-        <form onSubmit={handleSaveProfile} className="max-w-md">
+        <form onSubmit={handleSaveProfile} className="w-full">
           <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Full Name</label>
           <input
             type="text"
@@ -165,7 +165,7 @@ export default function SettingsClient({
         <p className="text-gray-600 dark:text-zinc-400 mb-4">
           Permanently delete your account and all associated applications. This action cannot be undone.
         </p>
-        <div className="max-w-md bg-red-50 dark:bg-red-950/20 p-4 rounded-md border border-red-100 dark:border-red-900/50">
+        <div className="w-full bg-red-50 dark:bg-red-950/20 p-4 rounded-md border border-red-100 dark:border-red-900/50">
           <label className="block text-sm font-medium text-red-800 dark:text-red-400 mb-2">
             Type <span className="font-bold select-all">{userEmail}</span> to confirm
           </label>
