@@ -195,7 +195,14 @@ export default function NewApplicationPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Job Link</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm text-gray-600">Job Link</label>
+                {formData.job_link && (
+                  <a href={formData.job_link.startsWith('http') ? formData.job_link : `https://${formData.job_link}`} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                    Open <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" /></svg>
+                  </a>
+                )}
+              </div>
               <input type="url" name="job_link" value={formData.job_link} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900" />
             </div>
 
