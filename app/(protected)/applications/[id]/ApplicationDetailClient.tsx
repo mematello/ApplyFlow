@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '../../../../lib/supabase/client';
 import ResumePreviewModal from '../../../../components/ResumePreviewModal';
+import { createPortal } from 'react-dom';
 
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 
 export default function ApplicationDetailClient({ initialApplication }: { initialApplication: any }) {
   const router = useRouter();
@@ -120,12 +121,30 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this application? This cannot be undone.")) {
-      return;
-    }
-    
+  const [isDeleteModalMounted, setIsDeleteModalMounted] = useState(false);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+
+  const openDeleteModal = () => {
+    setIsDeleteModalMounted(true);
+    setTimeout(() => setIsDeleteModalVisible(true), 10);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalVisible(false);
+    setTimeout(() => setIsDeleteModalMounted(false), 200);
+  };
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeDeleteModal();
+    };
+    if (isDeleteModalMounted) document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isDeleteModalMounted]);
+
+  const executeDelete = async () => {
     setIsDeleting(true);
+    closeDeleteModal();
     try {
       const res = await fetch(`/api/applications/${initialApplication.id}`, {
         method: "DELETE",
@@ -143,6 +162,35 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
     }
   };
 
+  const deleteModalContent = isDeleteModalMounted ? (
+    <div 
+      className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${isDeleteModalVisible ? 'opacity-100' : 'opacity-0'}`} 
+      onClick={closeDeleteModal}
+    >
+      <div 
+        className={`bg-white dark:bg-zinc-900 rounded-xl shadow-xl w-full max-w-sm p-6 overflow-hidden flex flex-col transition-all duration-200 ${isDeleteModalVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`} 
+        onClick={e => e.stopPropagation()}
+      >
+        <h3 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-2">Delete Application</h3>
+        <p className="text-gray-600 dark:text-zinc-400 mb-6">Are you sure you want to delete this application? This action cannot be undone.</p>
+        <div className="flex justify-end gap-3">
+          <button 
+            onClick={closeDeleteModal}
+            className="px-4 py-2 text-gray-700 dark:text-zinc-300 font-medium hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={executeDelete}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md transition-colors"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8 text-gray-900 dark:text-zinc-100 pb-24">
       {/* Header */}
@@ -155,11 +203,12 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
         </div>
         <button
           type="button"
-          onClick={handleDelete}
+          onClick={openDeleteModal}
           disabled={isDeleting}
-          className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-md font-medium transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-full transition-colors disabled:opacity-50"
         >
-          {isDeleting ? "Deleting..." : "Delete Application"}
+          <Trash2 className="w-4 h-4" />
+          {isDeleting ? "Deleting..." : "Delete"}
         </button>
       </div>
 
@@ -278,6 +327,7 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
       </form>
 
       <ResumePreviewModal resumeId={previewResumeId} onClose={() => setPreviewResumeId(null)} />
+      {typeof document !== "undefined" && createPortal(deleteModalContent, document.body)}
     </div>
   );
 }

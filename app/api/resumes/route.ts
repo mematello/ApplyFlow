@@ -35,15 +35,24 @@ export async function POST(request: Request) {
     let extractedText = null;
     try {
       if (ext === 'pdf') {
-        const pdfParse = (await import('pdf-parse')).default;
-        const data = await pdfParse(buffer);
-        extractedText = data.text;
+        const { execSync } = await import('child_process');
+        const os = await import('os');
+        const path = await import('path');
+        const fs = await import('fs');
+        const tempPath = path.join(os.tmpdir(), `resume-${Date.now()}.pdf`);
+        fs.writeFileSync(tempPath, buffer);
+        try {
+          const stdout = execSync(`node lib/extractPdf.mjs "${tempPath}"`, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+          extractedText = stdout.trim();
+        } finally {
+          fs.unlinkSync(tempPath);
+        }
       } else if (ext === 'docx') {
         const mammoth = (await import('mammoth')).default;
         const result = await mammoth.extractRawText({ buffer });
         extractedText = result.value;
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Text extraction failed:", err);
       // Graceful fallback: we will save it with extractedText = null
     }

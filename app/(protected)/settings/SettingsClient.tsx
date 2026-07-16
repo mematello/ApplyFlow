@@ -22,8 +22,28 @@ export default function SettingsClient({
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  // AI Models State
+  const [aiModels, setAiModels] = useState<any[]>([]);
+  const [preferredModel, setPreferredModel] = useState<string>("");
+  const [isLoadingModels, setIsLoadingModels] = useState(true);
+
   useEffect(() => {
     setMounted(true);
+    const fetchModels = async () => {
+      try {
+        const res = await fetch('/api/models');
+        if (res.ok) {
+          const data = await res.json();
+          setAiModels(data.data);
+          setPreferredModel(data.preferredModel);
+        }
+      } catch (err) {
+        console.error("Failed to fetch models", err);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
+    fetchModels();
   }, []);
 
   // Profile Form
@@ -63,6 +83,19 @@ export default function SettingsClient({
       router.refresh();
     }
     setIsSavingProfile(false);
+  };
+
+  const handleModelChange = async (modelName: string) => {
+    setPreferredModel(modelName);
+    
+    // Update local state optimistic
+    setAiModels(prev => prev.map(m => ({ ...m, is_preferred: m.name === modelName })));
+
+    try {
+       await supabase.from('profiles').update({ preferred_model: modelName }).eq('id', initialProfile.id);
+    } catch (e) {
+       console.error("Failed to save preferred model", e);
+    }
   };
 
   const handleDownloadCSV = () => {
@@ -207,6 +240,89 @@ export default function SettingsClient({
           </button>
           {profileMessage && <p className="mt-2 text-sm text-green-600 dark:text-green-400">{profileMessage}</p>}
         </form>
+      </section>
+
+      {/* AI Model Selection Section */}
+      <section className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">
+        <h2 className="text-xl font-semibold mb-6 border-b border-gray-200 dark:border-zinc-800 pb-4">AI Model Selection</h2>
+        <p className="text-gray-600 dark:text-zinc-400 mb-6 text-sm">Select your preferred model for resume extraction and matching. If your preferred model is exhausted, the system will automatically fall back to the next available one.</p>
+        
+        {isLoadingModels ? (
+           <div className="text-sm text-gray-500">Loading models...</div>
+        ) : (
+          <div className="space-y-4">
+            {aiModels.map(model => {
+              const isBlocked = model.blocked_until && new Date(model.blocked_until) > new Date();
+              const isExhausted = model.request_count >= model.dailyLimit;
+              const unavailable = isBlocked || isExhausted;
+              const isPreferred = model.name === preferredModel;
+              
+              let statusText = `${model.request_count} / ${model.dailyLimit} used today`;
+              if (isBlocked) {
+                statusText = `Blocked until ${new Date(model.blocked_until).toLocaleTimeString()}`;
+              } else if (isExhausted) {
+                statusText = `Daily limit reached`;
+              }
+              
+              // Find active model: the first one in priority order (preferred first, then default order) that is not unavailable
+              const orderedModels = [
+                ...aiModels.filter(m => m.name === preferredModel),
+                ...aiModels.filter(m => m.name !== preferredModel)
+              ];
+              const activeModel = orderedModels.find(m => {
+                const mb = m.blocked_until && new Date(m.blocked_until) > new Date();
+                const me = m.request_count >= m.dailyLimit;
+                return !mb && !me;
+              });
+              
+              const isCurrentlyActiveFallback = unavailable && isPreferred && activeModel;
+
+              return (
+                <div 
+                  key={model.name} 
+                  className={`p-4 rounded-md border ${isPreferred ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : 'border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900'} ${unavailable ? 'opacity-70' : ''}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input 
+                      type="radio" 
+                      id={`model-${model.name}`}
+                      name="ai_model"
+                      checked={isPreferred}
+                      onChange={() => handleModelChange(model.name)}
+                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <label htmlFor={`model-${model.name}`} className="block font-medium text-gray-900 dark:text-zinc-100 cursor-pointer">
+                        {model.name}
+                        {isPreferred && <span className="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-0.5 rounded-full">Preferred</span>}
+                        {unavailable && <span className="ml-2 text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 px-2 py-0.5 rounded-full">Unavailable</span>}
+                      </label>
+                      <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{model.description}</p>
+                      
+                      <div className="mt-3 flex items-center gap-4">
+                        <div className="flex-1 max-w-xs h-2 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full ${unavailable ? 'bg-red-500' : 'bg-blue-500'}`} 
+                            style={{ width: `${Math.min(100, (model.request_count / model.dailyLimit) * 100)}%` }}
+                          />
+                        </div>
+                        <span className={`text-xs font-medium ${unavailable ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-zinc-400'}`}>
+                          {statusText}
+                        </span>
+                      </div>
+                      
+                      {isCurrentlyActiveFallback && (
+                         <div className="mt-3 text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 p-2 rounded border border-amber-200 dark:border-amber-900/50">
+                           Currently unavailable. Falling back to <strong>{activeModel.name}</strong>.
+                         </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* Appearance Section */}

@@ -11,6 +11,8 @@ const ApplicationInsertSchema = JobExtractionSchema.extend({
   priority: z.enum(['low', 'medium', 'high']).nullable().optional(),
   resume_version: z.string().nullable().optional(),
   cover_letter_sent: z.boolean().default(false),
+  role_fit: z.number().nullable().optional(),
+  culture_fit: z.number().nullable().optional(),
 });
 
 export async function POST(req: Request) {

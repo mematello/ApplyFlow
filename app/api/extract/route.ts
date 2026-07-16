@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { JobExtractionSchema } from '../../../lib/schemas/extraction';
 import { createClient } from '../../../lib/supabase/server';
+import { getAvailableModel, AllModelsExhaustedError } from '../../../lib/ai/models';
+import { createServiceClient } from '../../../lib/supabase/serviceClient';
 
 // Initialize the Google Gen AI client inside the POST handler
 // to prevent module-level crashes if the environment variable is missing
@@ -83,18 +85,71 @@ Example Output:
     const systemInstruction1 = 'You are an expert ATS data extraction AI. Extract the job details from the provided job description. Ensure the output strictly follows the requested JSON schema. If information is missing, leave the nullable fields as null.' + oneShotExample;
     const systemInstruction2 = 'You are an expert ATS data extraction AI. Extract the following exact fields: company_name (string), role (string), tech_stack (array of strings), salary_range (string or null), location (string or null), source (string or null), recruiter_name (string or null), contact_info (string or null), notes (string or null). You MUST return valid JSON matching this structure exactly. Missing fields MUST be null, not omitted.' + oneShotExample;
 
+    let activeModelName: string;
+    try {
+      activeModelName = await getAvailableModel(user.id);
+    } catch (e: any) {
+      if (e instanceof AllModelsExhaustedError) {
+        return NextResponse.json({
+           error: 'all_models_exhausted',
+           retryAfterSeconds: e.retryAfterSeconds
+        }, { status: 429 });
+      }
+      throw e;
+    }
+
+    const serviceSupabase = createServiceClient();
+
     const performExtraction = async (systemInstruction: string) => {
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
-        contents: jobDescription,
-        config: {
-          systemInstruction,
-          responseMimeType: 'application/json',
-          responseSchema: geminiSchema,
-          temperature: 0.1,
+      try {
+        const response = await ai.models.generateContent({
+          model: activeModelName,
+          contents: jobDescription,
+          config: {
+            systemInstruction,
+            responseMimeType: 'application/json',
+            responseSchema: geminiSchema,
+            temperature: 0.1,
+          }
+        });
+        
+        // Success: Increment usage
+        await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
+        
+        return response.text;
+      } catch (e: any) {
+        const errStr = e.message || String(e);
+        if (e.status === 429 || e.status === 'RESOURCE_EXHAUSTED' || errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED')) {
+           let retryAfter = null;
+           const match = errStr.match(/retryDelay.*?([\d\.]+)s/);
+           if (match) {
+             retryAfter = Math.ceil(parseFloat(match[1]));
+           } else {
+             const msgMatch = errStr.match(/retry in ([\d\.]+)s/);
+             if (msgMatch) retryAfter = Math.ceil(parseFloat(msgMatch[1]));
+           }
+           
+           const blockUntil = new Date();
+           if (retryAfter) {
+             blockUntil.setSeconds(blockUntil.getSeconds() + retryAfter);
+           } else {
+             blockUntil.setHours(24, 0, 0, 0); // Default to midnight if no exact retry given
+           }
+           
+           // Block the model
+           await serviceSupabase.rpc('block_model', { 
+             p_model_name: activeModelName, 
+             p_blocked_until: blockUntil.toISOString() 
+           });
+
+           const quotaError = new Error('Quota exceeded');
+           (quotaError as any).isQuotaError = true;
+           (quotaError as any).retryAfterSeconds = retryAfter;
+           (quotaError as any).model = activeModelName;
+           throw quotaError;
         }
-      });
-      return response.text;
+        throw e;
+      }
     };
 
     let rawJsonText: string = "";
@@ -109,8 +164,9 @@ Example Output:
       const cleanedText = rawJsonText.slice(firstBrace, lastBrace + 1);
       parsedData = JSON.parse(cleanedText);
       const validated = JobExtractionSchema.parse(parsedData);
-      return NextResponse.json({ data: validated });
+      return NextResponse.json({ data: validated, model_used: activeModelName });
     } catch (error1: any) {
+      if (error1.isQuotaError) throw error1; // Let outer block handle it
       console.error("[Extract API] Attempt 1 failed:", error1.message);
       console.error("[Extract API] Raw text from model:", rawJsonText);
       // Try 2
@@ -122,8 +178,9 @@ Example Output:
         const cleanedText = rawJsonText.slice(firstBrace, lastBrace + 1);
         parsedData = JSON.parse(cleanedText);
         const validated = JobExtractionSchema.parse(parsedData);
-        return NextResponse.json({ data: validated });
+        return NextResponse.json({ data: validated, model_used: activeModelName });
       } catch (error2: any) {
+        if (error2.isQuotaError) throw error2; // Let outer block handle it
         console.error("[Extract API] Attempt 2 failed:", error2.message);
         console.error("[Extract API] Raw text from model:", rawJsonText);
         // Return 422 on second failure
@@ -138,6 +195,13 @@ Example Output:
       }
     }
   } catch (error: any) {
+    if (error.isQuotaError) {
+      return NextResponse.json({
+         error: 'quota_exceeded',
+         model: error.model,
+         retryAfterSeconds: error.retryAfterSeconds
+      }, { status: 429 });
+    }
     return NextResponse.json(
       { error: 'An unexpected server error occurred.', details: error.message, partialData: null },
       { status: 500 }
