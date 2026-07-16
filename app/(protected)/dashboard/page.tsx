@@ -2,6 +2,7 @@ import { createClient } from '../../../lib/supabase/server';
 import { redirect } from 'next/navigation';
 import DashboardClient from './DashboardClient';
 import Link from 'next/link';
+import LogoutButton from '../../../components/LogoutButton';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -10,6 +11,19 @@ export default async function DashboardPage() {
   if (!user) {
     redirect('/login');
   }
+
+  // Check for profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile) {
+    redirect('/onboarding');
+  }
+
+  const firstName = profile.full_name.split(' ')[0];
 
   // Fetch applications for the authenticated user, ordered by date_applied descending
   const { data: applications, error } = await supabase
@@ -20,31 +34,48 @@ export default async function DashboardPage() {
 
   if (error) {
     console.error("Error fetching applications:", error);
-    return <div className="p-8 text-red-500">Failed to load applications.</div>;
+    return <div className="p-8 text-red-500 dark:text-red-400">Failed to load applications.</div>;
   }
 
   // Handle empty state gracefully by prompting the user to track their first application
   if (!applications || applications.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 text-gray-900">
-        <h2 className="text-2xl font-bold mb-4">No applications yet</h2>
-        <p className="text-gray-600 mb-8 max-w-md">
-          You haven't tracked any job applications yet. Paste your first job description to get started!
-        </p>
-        <Link href="/new" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">
-          Track New Application
-        </Link>
+      <div className="max-w-6xl mx-auto p-4 md:p-8 text-gray-900 dark:text-zinc-100">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Welcome, {firstName}!</h1>
+          <div className="flex items-center gap-6">
+            <LogoutButton />
+            <Link href="/settings" className="px-4 py-2 bg-gray-200 dark:bg-zinc-800 hover:bg-gray-300 dark:hover:bg-zinc-700 text-gray-800 dark:text-zinc-200 rounded-md font-medium transition-colors shadow-sm">
+              Settings
+            </Link>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+          <h2 className="text-2xl font-bold mb-4">No applications yet</h2>
+          <p className="text-gray-600 dark:text-zinc-400 mb-8 max-w-md">
+            You haven't tracked any job applications yet. Paste your first job description to get started!
+          </p>
+          <Link href="/new" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-sm">
+            Track New Application
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 text-gray-900">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 text-gray-900 dark:text-zinc-100">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <Link href="/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-sm">
-          + New Application
-        </Link>
+        <h1 className="text-3xl font-bold">Welcome, {firstName}!</h1>
+        <div className="flex items-center gap-6">
+          <LogoutButton />
+          <Link href="/settings" className="px-4 py-2 bg-gray-200 dark:bg-zinc-800 hover:bg-gray-300 dark:hover:bg-zinc-700 text-gray-800 dark:text-zinc-200 rounded-md font-medium transition-colors shadow-sm">
+            Settings
+          </Link>
+          <Link href="/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-sm">
+            + New Application
+          </Link>
+        </div>
       </div>
       
       {/* Pass the loaded data down to the interactive client component */}
