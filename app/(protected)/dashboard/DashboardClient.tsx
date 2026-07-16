@@ -6,13 +6,13 @@ import { useRouter } from 'next/navigation';
 type Application = any; // Will use any for now to flexibly map from db schema
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-zinc-700 text-zinc-200 border-zinc-600",
-  applied: "bg-blue-900/50 text-blue-200 border-blue-800",
-  screening: "bg-yellow-900/50 text-yellow-200 border-yellow-800",
-  interview: "bg-purple-900/50 text-purple-200 border-purple-800",
-  offer: "bg-green-900/50 text-green-200 border-green-800",
-  rejected: "bg-red-900/50 text-red-200 border-red-800",
-  withdrawn: "bg-zinc-800 text-zinc-400 border-zinc-700",
+  draft: "bg-gray-100 text-gray-700 border-gray-300",
+  applied: "bg-blue-50 text-blue-700 border-blue-200",
+  screening: "bg-yellow-50 text-yellow-700 border-yellow-200",
+  interview: "bg-purple-50 text-purple-700 border-purple-200",
+  offer: "bg-green-50 text-green-700 border-green-200",
+  rejected: "bg-red-50 text-red-700 border-red-200",
+  withdrawn: "bg-gray-100 text-gray-500 border-gray-200",
 };
 
 export default function DashboardClient({ initialApplications }: { initialApplications: Application[] }) {
@@ -95,7 +95,7 @@ export default function DashboardClient({ initialApplications }: { initialApplic
             key={status}
             onClick={() => setFilter(status)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-              filter === status ? 'bg-zinc-100 text-zinc-900 shadow-sm' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200 border border-zinc-700'
+              filter === status ? 'bg-gray-900 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-200'
             }`}
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -104,37 +104,37 @@ export default function DashboardClient({ initialApplications }: { initialApplic
       </div>
 
       {/* Table Container */}
-      <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden shadow-sm overflow-x-auto">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[800px]">
-          <thead className="bg-zinc-800/50 border-b border-zinc-700/50">
+          <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="p-4 text-sm font-medium text-zinc-400">Company</th>
-              <th className="p-4 text-sm font-medium text-zinc-400">Role</th>
-              <th className="p-4 text-sm font-medium text-zinc-400">Status</th>
+              <th className="p-4 text-sm font-medium text-gray-500">Company</th>
+              <th className="p-4 text-sm font-medium text-gray-500">Role</th>
+              <th className="p-4 text-sm font-medium text-gray-500">Status</th>
               <th 
-                className="p-4 text-sm font-medium text-zinc-400 cursor-pointer hover:text-zinc-200 select-none transition-colors"
+                className="p-4 text-sm font-medium text-gray-500 cursor-pointer hover:text-gray-900 select-none transition-colors"
                 onClick={() => handleSort('date_applied')}
               >
                 Date Applied {sortField === 'date_applied' && (sortAsc ? '↑' : '↓')}
               </th>
               <th 
-                className="p-4 text-sm font-medium text-zinc-400 cursor-pointer hover:text-zinc-200 select-none transition-colors"
+                className="p-4 text-sm font-medium text-gray-500 cursor-pointer hover:text-gray-900 select-none transition-colors"
                 onClick={() => handleSort('priority')}
               >
                 Priority {sortField === 'priority' && (sortAsc ? '↑' : '↓')}
               </th>
-              <th className="p-4 text-sm font-medium text-zinc-400">Next Action Date</th>
+              <th className="p-4 text-sm font-medium text-gray-500">Next Action Date</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800/50">
+          <tbody className="divide-y divide-gray-100">
             {sortedApps.map(app => (
               <tr 
                 key={app.id} 
                 onClick={() => handleRowClick(app.id)}
-                className="hover:bg-zinc-800/40 transition-colors cursor-pointer group"
+                className="hover:bg-gray-50 transition-colors cursor-pointer group"
               >
-                <td className="p-4 font-medium text-zinc-100">{app.company_name}</td>
-                <td className="p-4 text-zinc-300">{app.role}</td>
+                <td className="p-4 font-medium text-gray-900">{app.company_name}</td>
+                <td className="p-4 text-gray-600">{app.role}</td>
                 <td className="p-4">
                   {/* Status Dropdown masquerading as a colored badge */}
                   <div className={`inline-flex items-center rounded-full text-xs font-semibold select-none border ${STATUS_COLORS[app.status]}`}>
@@ -144,40 +144,40 @@ export default function DashboardClient({ initialApplications }: { initialApplic
                       onChange={(e) => handleStatusChange(app.id, e.target.value, e)}
                       className="bg-transparent appearance-none border-none outline-none cursor-pointer pl-3 pr-8 py-1.5 focus:ring-0 w-full font-medium"
                       style={{
-                        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                         backgroundPosition: 'right 0.5rem center',
                         backgroundRepeat: 'no-repeat',
                         backgroundSize: '1.25em 1.25em'
                       }}
                     >
-                      <option className="bg-zinc-800 text-zinc-100" value="draft">Draft</option>
-                      <option className="bg-zinc-800 text-zinc-100" value="applied">Applied</option>
-                      <option className="bg-zinc-800 text-zinc-100" value="screening">Screening</option>
-                      <option className="bg-zinc-800 text-zinc-100" value="interview">Interview</option>
-                      <option className="bg-zinc-800 text-zinc-100" value="offer">Offer</option>
-                      <option className="bg-zinc-800 text-zinc-100" value="rejected">Rejected</option>
-                      <option className="bg-zinc-800 text-zinc-100" value="withdrawn">Withdrawn</option>
+                      <option className="bg-white text-gray-900" value="draft">Draft</option>
+                      <option className="bg-white text-gray-900" value="applied">Applied</option>
+                      <option className="bg-white text-gray-900" value="screening">Screening</option>
+                      <option className="bg-white text-gray-900" value="interview">Interview</option>
+                      <option className="bg-white text-gray-900" value="offer">Offer</option>
+                      <option className="bg-white text-gray-900" value="rejected">Rejected</option>
+                      <option className="bg-white text-gray-900" value="withdrawn">Withdrawn</option>
                     </select>
                   </div>
                 </td>
-                <td className="p-4 text-zinc-400">{app.date_applied || "—"}</td>
+                <td className="p-4 text-gray-500">{app.date_applied || "—"}</td>
                 <td className="p-4">
                   {app.priority ? (
                     <span className={`text-xs px-2.5 py-1 rounded-md font-medium border ${
-                      app.priority === 'high' ? 'bg-red-900/20 text-red-400 border-red-900/50' :
-                      app.priority === 'medium' ? 'bg-yellow-900/20 text-yellow-400 border-yellow-900/50' :
-                      'bg-blue-900/20 text-blue-400 border-blue-900/50'
+                      app.priority === 'high' ? 'bg-red-50 text-red-700 border-red-200' :
+                      app.priority === 'medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                      'bg-blue-50 text-blue-700 border-blue-200'
                     }`}>
                       {app.priority.toUpperCase()}
                     </span>
                   ) : "—"}
                 </td>
-                <td className="p-4 text-zinc-400">{app.next_action_date || "—"}</td>
+                <td className="p-4 text-gray-500">{app.next_action_date || "—"}</td>
               </tr>
             ))}
             {sortedApps.length === 0 && (
               <tr>
-                <td colSpan={6} className="p-12 text-center text-zinc-500">
+                <td colSpan={6} className="p-12 text-center text-gray-500">
                   No applications match the "{filter}" filter.
                 </td>
               </tr>

@@ -30,9 +30,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="w-full max-w-sm rounded-lg border p-6 shadow-md bg-zinc-900 border-zinc-800 text-white">
-        <h1 className="mb-6 text-2xl font-bold text-center text-white">Sign In</h1>
+    <div className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50">
+      <div className="w-full max-w-sm rounded-lg border p-6 shadow-md bg-white border-gray-200">
+        <h1 className="mb-6 text-2xl font-bold text-center text-gray-900">Sign In</h1>
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
           <input
             type="email"
@@ -40,17 +40,17 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="rounded border border-zinc-700 bg-zinc-800 p-2 w-full text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="rounded border border-gray-300 bg-white p-2 w-full text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             type="submit"
             disabled={loading}
-            className="rounded bg-blue-600 p-2 text-white font-medium hover:bg-blue-700 disabled:bg-zinc-700 transition-colors"
+            className="rounded bg-blue-600 p-2 text-white font-medium hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
           >
             {loading ? "Sending..." : "Send Magic Link"}
           </button>
         </form>
-        {message && <p className="mt-4 text-center text-sm text-zinc-300">{message}</p>}
+        {message && <p className="mt-4 text-center text-sm text-gray-600">{message}</p>}
       </div>
     </div>
   );

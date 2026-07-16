@@ -26,9 +26,9 @@ export default async function DashboardPage() {
   // Handle empty state gracefully by prompting the user to track their first application
   if (!applications || applications.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 text-zinc-100">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 text-gray-900">
         <h2 className="text-2xl font-bold mb-4">No applications yet</h2>
-        <p className="text-zinc-400 mb-8 max-w-md">
+        <p className="text-gray-600 mb-8 max-w-md">
           You haven't tracked any job applications yet. Paste your first job description to get started!
         </p>
         <Link href="/new" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">
@@ -39,7 +39,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 text-zinc-100">
+    <div className="max-w-6xl mx-auto p-4 md:p-8 text-gray-900">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <Link href="/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-sm">
