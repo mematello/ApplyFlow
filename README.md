@@ -2,10 +2,12 @@
 
 ApplyFlow is an AI-powered job application tracker designed to help you organize your job search, automatically extract data from job descriptions, and intelligently match your resume against role requirements.
 
+*(Note: Please refer to `.agents/AGENTS.md` for the AI-assisted development conventions and standing rules used in this project.)*
+
 ## Features
 
 - **Automated Data Extraction**: Paste a job description and have Gemini automatically extract the company name, role, tech stack, salary range, and more.
-- **Resume Matching**: Upload your resumes (PDF/DOCX) and the system will automatically score your fit for a role, identifying exact strengths and missing skill gaps.
+- **Resume Matching**: Upload your resumes (PDF/DOCX) and the system will automatically score your fit for a role, generating a concise, first-person summary of the match for your own tracking notes.
 - **Smart Tracking**: Manage your applications through different stages (applied, interviewing, offered, rejected) and keep track of your next required actions.
 - **Automated Email Reminders**: Get daily email notifications for scheduled follow-ups and next action dates via Vercel Cron and Resend.
 
@@ -13,7 +15,7 @@ ApplyFlow is an AI-powered job application tracker designed to help you organize
 
 - **Frontend / Backend**: [Next.js](https://nextjs.org/) (App Router, Server Actions, API Routes)
 - **Database / Auth**: [Supabase](https://supabase.com/) & PostgreSQL
-- **AI Processing**: Google [Gemini API](https://ai.google.dev/) (gemini-2.5-flash series)
+- **AI Processing**: Google [Gemini API](https://ai.google.dev/) (gemini-3-flash-preview series)
 - **Email Delivery**: [Resend](https://resend.com/)
 
 ## Local Setup
@@ -42,12 +44,8 @@ ApplyFlow is an AI-powered job application tracker designed to help you organize
    ```
 
 3. **Database Migrations**
-   To set up your Supabase database schema, you must apply the SQL migrations found in the `supabase/migrations/` folder. They are numbered sequentially (e.g., `0001_init.sql`, `0002_rls.sql`, etc.) and should be run in order using the Supabase CLI or applied directly via your project's SQL editor.
-
-   ```bash
-   # If using Supabase CLI locally:
-   supabase db push
-   ```
+   To set up your Supabase database schema, you must apply the SQL migrations found in the `supabase/migrations/` folder.
+   **ApplyFlow uses a manual migration workflow.** Migrations are written as numbered `.sql` files, but they are applied manually via the Supabase Dashboard SQL editor rather than using the CLI `db push` command. Execute them in numerical order (e.g., `0001_init.sql`, `0002_rls.sql`, etc.).
 
 4. **Run the Development Server**
    ```bash
@@ -59,4 +57,16 @@ ApplyFlow is an AI-powered job application tracker designed to help you organize
 
 Because AI API quotas can be exhausted during heavy testing or bulk application entry, ApplyFlow includes a specialized internal fallback infrastructure. 
 
-The system tracks daily request counts for each Gemini model in the database (`ai_model_usage` table). If the primary model (`gemini-2.5-flash`) hits a `429 Quota Exceeded` error, the system records the exact block time and automatically falls back to secondary models (like `gemini-2.5-flash-lite`) seamlessly. This ensures uninterrupted extraction and matching without needing manual intervention. You can configure your preferred primary model directly in the app's settings.
+The system tracks daily request counts for each Gemini model in the database (`ai_model_usage` table). If the primary model hits a `429 Quota Exceeded` error, the system records the exact block time and automatically falls back to secondary models seamlessly. This ensures uninterrupted extraction and matching without needing manual intervention. You can configure your preferred primary model directly in the app's settings.
+
+The current fallback chain is:
+1. `gemini-3-flash-preview` (Primary, ~1500 req/day)
+2. `gemini-3.1-flash-lite-preview` (Secondary fallback, ~1500 req/day)
+3. `gemini-3.5-flash` (Last resort, capped at 20 req/day)
+
+## Roadmap (Phase 2+)
+
+- **URL-Based Job Ingestion**: Automatically scrape and extract job details just by pasting a URL.
+- **Duplicate Detection**: Warn users if they are applying to a role they've already tracked.
+- **Browser Extension**: A companion extension to capture job details directly from job boards.
+- **Multi-User Support**: Transition from a solo-developer tool to a multi-tenant platform.
