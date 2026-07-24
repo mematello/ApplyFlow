@@ -17,7 +17,86 @@ export class AllModelsExhaustedError extends Error {
   }
 }
 
-export async function getAvailableModel(userId: string) {
+export interface ParsedAiError {
+  isQuotaError: boolean;
+  isUnavailableError: boolean;
+  statusCode: number | null;
+  statusText: string | null;
+  message: string;
+  retryAfterSeconds: number | null;
+}
+
+export function parseGeminiError(e: any): ParsedAiError {
+  const rawMessage = e?.message || String(e || '');
+  let statusCode: number | null = typeof e?.status === 'number' ? e.status : (typeof e?.code === 'number' ? e.code : null);
+  let statusText: string | null = typeof e?.status === 'string' ? e.status : null;
+  let message = rawMessage;
+
+  // Safely attempt to parse stringified JSON embedded in error message
+  try {
+    const firstBrace = rawMessage.indexOf('{');
+    const lastBrace = rawMessage.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      const parsed = JSON.parse(rawMessage.slice(firstBrace, lastBrace + 1));
+      const errObj = parsed.error || parsed;
+      if (errObj.code) statusCode = Number(errObj.code);
+      if (errObj.status) statusText = String(errObj.status);
+      if (errObj.message) message = String(errObj.message);
+    }
+  } catch {
+    // Non-JSON message; fall back to string matching
+  }
+
+  const upperRaw = (rawMessage + ' ' + (statusText || '') + ' ' + (statusCode || '')).toUpperCase();
+
+  const isQuotaError =
+    statusCode === 429 ||
+    statusText === 'RESOURCE_EXHAUSTED' ||
+    upperRaw.includes('429') ||
+    upperRaw.includes('RESOURCE_EXHAUSTED') ||
+    upperRaw.includes('QUOTA');
+
+  const isUnavailableError =
+    statusCode === 503 ||
+    statusCode === 500 ||
+    statusCode === 504 ||
+    statusText === 'UNAVAILABLE' ||
+    upperRaw.includes('503') ||
+    upperRaw.includes('UNAVAILABLE') ||
+    upperRaw.includes('HIGH DEMAND') ||
+    upperRaw.includes('TEMPORARILY OVERLOADED');
+
+  let retryAfterSeconds: number | null = null;
+  const match = rawMessage.match(/retryDelay.*?([\d\.]+)s/) || rawMessage.match(/retry in ([\d\.]+)s/);
+  if (match) {
+    retryAfterSeconds = Math.ceil(parseFloat(match[1]));
+  }
+
+  return {
+    isQuotaError,
+    isUnavailableError,
+    statusCode,
+    statusText,
+    message,
+    retryAfterSeconds,
+  };
+}
+
+export async function blockModelInDb(modelName: string, durationSeconds: number) {
+  try {
+    const supabase = createServiceClient();
+    const blockUntil = new Date();
+    blockUntil.setSeconds(blockUntil.getSeconds() + durationSeconds);
+    await supabase.rpc('block_model', {
+      p_model_name: modelName,
+      p_blocked_until: blockUntil.toISOString()
+    });
+  } catch (err) {
+    console.error(`[AI Models] Failed to block model ${modelName}:`, err);
+  }
+}
+
+export async function getAvailableModel(userId: string, excludeModels: string[] = []) {
   const supabase = createServiceClient();
   
   // 1. Fetch user's preferred model
@@ -44,10 +123,15 @@ export async function getAvailableModel(userId: string) {
   }
 
   // 3. Reorder models: put preferred model first, then the rest in default order
+  const candidateModels = AI_MODELS.filter(m => !excludeModels.includes(m.name));
   const orderedModels = [
-    ...AI_MODELS.filter(m => m.name === preferredModelName),
-    ...AI_MODELS.filter(m => m.name !== preferredModelName)
+    ...candidateModels.filter(m => m.name === preferredModelName),
+    ...candidateModels.filter(m => m.name !== preferredModelName)
   ];
+
+  if (orderedModels.length === 0) {
+    throw new AllModelsExhaustedError(60);
+  }
 
   // 4. Find the first available model
   let earliestReset = new Date();

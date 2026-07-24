@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { MatchAssessmentSchema } from '../../../lib/schemas/matching';
 import { createClient } from '../../../lib/supabase/server';
-import { getAvailableModel, AllModelsExhaustedError } from '../../../lib/ai/models';
+import { getAvailableModel, AllModelsExhaustedError, parseGeminiError, blockModelInDb, AI_MODELS } from '../../../lib/ai/models';
 import { createServiceClient } from '../../../lib/supabase/serviceClient';
 
 let ai: GoogleGenAI;
@@ -65,82 +65,90 @@ ${jobDescription}
 --- CANDIDATE RESUME ---
 ${resumeText}`;
 
-    let activeModelName: string;
-    try {
-      activeModelName = await getAvailableModel(user.id);
-    } catch (e: any) {
-      if (e instanceof AllModelsExhaustedError) {
-        return NextResponse.json({
-           error: 'all_models_exhausted',
-           retryAfterSeconds: e.retryAfterSeconds
-        }, { status: 429 });
-      }
-      throw e;
-    }
-
     const serviceSupabase = createServiceClient();
+    const excludedModels: string[] = [];
+    let attempts = 0;
+    const maxAttempts = AI_MODELS.length;
+    let lastError: any = null;
 
-    let response;
-    try {
-      response = await ai.models.generateContent({
-        model: activeModelName,
-        contents: prompt,
-        config: {
-          systemInstruction,
-          responseMimeType: 'application/json',
-          responseSchema: geminiMatchSchema,
-          temperature: 0.1,
+    while (attempts < maxAttempts) {
+      attempts++;
+      let activeModelName: string;
+
+      try {
+        activeModelName = await getAvailableModel(user.id, excludedModels);
+      } catch (e: any) {
+        if (e instanceof AllModelsExhaustedError) {
+          return NextResponse.json({
+             error: 'all_models_exhausted',
+             retryAfterSeconds: e.retryAfterSeconds
+          }, { status: 429 });
         }
-      });
-      
-      // Success: Increment usage
-      await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
-      
-    } catch (e: any) {
-      const errStr = e.message || String(e);
-      if (e.status === 429 || e.status === 'RESOURCE_EXHAUSTED' || errStr.includes('429') || errStr.includes('RESOURCE_EXHAUSTED')) {
-         let retryAfter = null;
-         const match = errStr.match(/retryDelay.*?([\d\.]+)s/);
-         if (match) {
-           retryAfter = Math.ceil(parseFloat(match[1]));
-         } else {
-           const msgMatch = errStr.match(/retry in ([\d\.]+)s/);
-           if (msgMatch) retryAfter = Math.ceil(parseFloat(msgMatch[1]));
-         }
-         
-         const blockUntil = new Date();
-         if (retryAfter) {
-           blockUntil.setSeconds(blockUntil.getSeconds() + retryAfter);
-         } else {
-           blockUntil.setHours(24, 0, 0, 0); // Default to midnight if no exact retry given
-         }
-         
-         // Block the model
-         await serviceSupabase.rpc('block_model', { 
-           p_model_name: activeModelName, 
-           p_blocked_until: blockUntil.toISOString() 
-         });
-
-         return NextResponse.json({
-            error: 'quota_exceeded',
-            model: activeModelName,
-            retryAfterSeconds: retryAfter
-         }, { status: 429 });
+        throw e;
       }
-      throw e;
+
+      try {
+        const response = await ai.models.generateContent({
+          model: activeModelName,
+          contents: prompt,
+          config: {
+            systemInstruction,
+            responseMimeType: 'application/json',
+            responseSchema: geminiMatchSchema,
+            temperature: 0.1,
+          }
+        });
+        
+        await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
+        
+        const rawJsonText = response.text || "";
+        if (!rawJsonText) throw new Error("No response text from AI model");
+        const firstBrace = rawJsonText.indexOf('{');
+        const lastBrace = rawJsonText.lastIndexOf('}');
+        if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON found");
+        
+        const parsedData = JSON.parse(rawJsonText.slice(firstBrace, lastBrace + 1));
+        const validated = MatchAssessmentSchema.parse(parsedData);
+
+        return NextResponse.json({ data: validated, model_used: activeModelName });
+
+      } catch (modelErr: any) {
+        const parsedErr = parseGeminiError(modelErr);
+        lastError = parsedErr;
+
+        if (parsedErr.isQuotaError) {
+          const blockSecs = parsedErr.retryAfterSeconds || 86400;
+          await blockModelInDb(activeModelName, blockSecs);
+          excludedModels.push(activeModelName);
+          console.warn(`[Match API] Model ${activeModelName} hit quota. Blocked for ${blockSecs}s. Trying fallback model...`);
+          continue;
+        } else if (parsedErr.isUnavailableError) {
+          const blockSecs = parsedErr.retryAfterSeconds || 300;
+          await blockModelInDb(activeModelName, blockSecs);
+          excludedModels.push(activeModelName);
+          console.warn(`[Match API] Model ${activeModelName} unavailable (503/high demand). Blocked for ${blockSecs}s. Trying fallback model...`);
+          continue;
+        } else {
+          console.error("[Match API] Error:", parsedErr.message);
+          return NextResponse.json({ error: 'Failed to analyze match.', details: parsedErr.message }, { status: 500 });
+        }
+      }
     }
 
-    const rawJsonText = response.text;
-    const firstBrace = rawJsonText.indexOf('{');
-    const lastBrace = rawJsonText.lastIndexOf('}');
-    if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON found");
-    
-    const parsedData = JSON.parse(rawJsonText.slice(firstBrace, lastBrace + 1));
-    const validated = MatchAssessmentSchema.parse(parsedData);
+    if (lastError?.isUnavailableError) {
+      return NextResponse.json({
+        error: 'service_unavailable',
+        message: 'The AI model is currently experiencing high demand. Please try again in a few moments.'
+      }, { status: 503 });
+    }
 
-    return NextResponse.json({ data: validated, model_used: activeModelName });
+    return NextResponse.json({
+      error: 'all_models_exhausted',
+      retryAfterSeconds: 60
+    }, { status: 429 });
+
   } catch (error: any) {
-    console.error("[Match API] Error:", error.message);
+    console.error("[Match API] Unexpected error:", error.message);
     return NextResponse.json(
       { error: 'Failed to analyze match.', details: error.message },
       { status: 500 }

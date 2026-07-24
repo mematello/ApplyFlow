@@ -141,19 +141,28 @@ export default function NewApplicationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ jobDescription }),
       });
-      const data = await res.json();
       
+      let data: any = {};
+      try {
+        const text = await res.text();
+        data = JSON.parse(text);
+      } catch {
+        data = { error: res.statusText || `Server returned status ${res.status}` };
+      }
+
       if (!res.ok) {
-        if (res.status === 429) {
-          if (data.error === 'all_models_exhausted') {
-             const min = Math.ceil((data.retryAfterSeconds || 60) / 60);
-             throw new Error(`All AI models are currently at capacity. Please try again after ${min} minute${min !== 1 ? 's' : ''}.`);
-          } else if (data.error === 'quota_exceeded') {
-             const min = Math.ceil((data.retryAfterSeconds || 60) / 60);
-             throw new Error(`Daily limit reached for ${data.model || 'model'}. Try again in ${min} minute${min !== 1 ? 's' : ''}.`);
-          }
+        let errorMsg = data.message || data.error || `Extraction failed (${res.status})`;
+        if (typeof errorMsg !== 'string') {
+          errorMsg = JSON.stringify(errorMsg);
         }
-        throw new Error((data.error || "Failed to extract data") + (data.details ? `\nDetails: ${JSON.stringify(data.details)}` : ""));
+
+        if (res.status === 429) {
+          const min = Math.ceil((data.retryAfterSeconds || 60) / 60);
+          errorMsg = `All AI models are currently at capacity. Please try again after ${min} minute${min !== 1 ? 's' : ''}.`;
+        } else if (res.status === 503 || data.error === 'service_unavailable') {
+          errorMsg = data.message || "The AI model is currently experiencing high demand. Please try again in a few moments.";
+        }
+        throw new Error(errorMsg);
       }
       
       // Update active model name if API fallback happened
@@ -191,7 +200,15 @@ export default function NewApplicationPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ jobDescription, resumeText: currentResume.extracted_text })
           });
-          const matchData = await matchRes.json();
+          
+          let matchData: any = {};
+          try {
+            const text = await matchRes.text();
+            matchData = JSON.parse(text);
+          } catch {
+            matchData = { error: matchRes.statusText || `Match server status ${matchRes.status}` };
+          }
+
           if (matchData.model_used) {
             setActiveModelName(matchData.model_used);
           }
@@ -217,17 +234,14 @@ export default function NewApplicationPage() {
             setAiSuggestedFields(newSuggested);
             setToast({ message: "Extraction & Match Analysis complete!", type: 'success' });
           } else {
-             if (matchRes.status === 429) {
-               if (matchData.error === 'all_models_exhausted') {
-                 const min = Math.ceil((matchData.retryAfterSeconds || 60) / 60);
-                 setToast({ message: `Extraction complete! (All AI models are at capacity. Try again in ${min} min.)`, type: 'error' });
-               } else if (matchData.error === 'quota_exceeded') {
-                 const min = Math.ceil((matchData.retryAfterSeconds || 60) / 60);
-                 setToast({ message: `Extraction complete! (Daily limit reached for ${matchData.model || 'model'}. Try again in ${min} min.)`, type: 'error' });
-               }
-             } else {
-               setToast({ message: "Extraction complete! (Match analysis failed)", type: 'error' });
-             }
+            if (matchRes.status === 429) {
+              const min = Math.ceil((matchData.retryAfterSeconds || 60) / 60);
+              setToast({ message: `Extraction complete! (AI models at capacity, try again in ${min} min.)`, type: 'error' });
+            } else if (matchRes.status === 503 || matchData.error === 'service_unavailable') {
+              setToast({ message: "Extraction complete! (AI models under high demand)", type: 'error' });
+            } else {
+              setToast({ message: "Extraction complete! (Match analysis failed)", type: 'error' });
+            }
           }
         } catch (matchErr) {
           console.error("Match error:", matchErr);
@@ -418,7 +432,7 @@ export default function NewApplicationPage() {
               disabled={isExtracting || isMatching || !jobDescription.trim()}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isExtracting ? "Extracting with AI..." : isMatching ? "Analyzing fit..." : "✨ Extract Data"}
+              {isExtracting ? "Extracting with AI..." : "✨ Extract Data"}
             </button>
           </div>
         </div>
@@ -493,7 +507,7 @@ export default function NewApplicationPage() {
             <div>
               <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">
                 Priority
-                {aiSuggestedFields.has('priority') && <Sparkles className="w-3 h-3 text-blue-500 inline ml-1" title="AI suggested" />}
+                {aiSuggestedFields.has('priority') && <span title="AI suggested"><Sparkles className="w-3 h-3 text-blue-500 inline ml-1" /></span>}
               </label>
               <select name="priority" value={formData.priority} onChange={handleInputChange} className={`w-full p-2 rounded-md bg-white dark:bg-zinc-900 border ${aiSuggestedFields.has('priority') ? 'border-blue-400 dark:border-blue-500' : 'border-gray-300 dark:border-zinc-700'} focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100 transition-colors`}>
                 <option value="">None</option>
@@ -507,14 +521,14 @@ export default function NewApplicationPage() {
               <div>
                 <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">
                   Role Fit (1-5)
-                  {aiSuggestedFields.has('role_fit') && <Sparkles className="w-3 h-3 text-blue-500 inline ml-1" title="AI suggested" />}
+                  {aiSuggestedFields.has('role_fit') && <span title="AI suggested"><Sparkles className="w-3 h-3 text-blue-500 inline ml-1" /></span>}
                 </label>
                 <input type="number" min="1" max="5" name="role_fit" value={formData.role_fit} onChange={handleInputChange} className={`w-full p-2 rounded-md bg-white dark:bg-zinc-900 border ${aiSuggestedFields.has('role_fit') ? 'border-blue-400 dark:border-blue-500' : 'border-gray-300 dark:border-zinc-700'} focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100 transition-colors`} />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">
                   Culture Fit (1-5)
-                  {aiSuggestedFields.has('culture_fit') && <Sparkles className="w-3 h-3 text-blue-500 inline ml-1" title="AI suggested" />}
+                  {aiSuggestedFields.has('culture_fit') && <span title="AI suggested"><Sparkles className="w-3 h-3 text-blue-500 inline ml-1" /></span>}
                 </label>
                 <input type="number" min="1" max="5" name="culture_fit" value={formData.culture_fit} onChange={handleInputChange} className={`w-full p-2 rounded-md bg-white dark:bg-zinc-900 border ${aiSuggestedFields.has('culture_fit') ? 'border-blue-400 dark:border-blue-500' : 'border-gray-300 dark:border-zinc-700'} focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100 transition-colors`} />
               </div>
@@ -569,7 +583,7 @@ export default function NewApplicationPage() {
           <div>
             <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">
               Notes
-              {aiSuggestedFields.has('notes') && <Sparkles className="w-3 h-3 text-blue-500 inline ml-1" title="AI suggested" />}
+              {aiSuggestedFields.has('notes') && <span title="AI suggested"><Sparkles className="w-3 h-3 text-blue-500 inline ml-1" /></span>}
             </label>
             <textarea name="notes" value={formData.notes} onChange={handleInputChange} className={`w-full p-2 rounded-md bg-white dark:bg-zinc-900 border ${aiSuggestedFields.has('notes') ? 'border-blue-400 dark:border-blue-500' : 'border-gray-300 dark:border-zinc-700'} focus:ring-2 focus:ring-blue-500 outline-none h-48 text-gray-900 dark:text-zinc-100 transition-colors`} />
           </div>

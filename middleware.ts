@@ -36,12 +36,17 @@ export async function middleware(request: NextRequest) {
 
   const url = request.nextUrl.clone()
 
+  // Handle root / redirect based on server-verified user authentication
+  if (url.pathname === '/') {
+    url.pathname = user ? '/dashboard' : '/login'
+    return NextResponse.redirect(url)
+  }
+
   // Define public routes that do not require authentication
   const isPublicRoute = 
     url.pathname === '/login' || 
     url.pathname.startsWith('/auth/callback') ||
-    url.pathname.startsWith('/api/cron') ||
-    url.pathname === '/';
+    url.pathname.startsWith('/api/cron');
 
   if (!user && !isPublicRoute) {
     // If the user is unauthenticated and tries to access an API route, return 401
