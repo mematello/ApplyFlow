@@ -60,7 +60,41 @@ docs/
   schema.md, prompts.md → internal notes on DB structure and prompt design
 ```
 
-**Request flow for AI operations:** client → Next.js API route (auth-checked server-side) → Gemini, with automatic fallback across models on failure → structured response validated against a schema → client. API keys never touch the browser.
+**Request flow for AI operations:**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    
+    participant Client as Client (Browser)
+    participant NextApi as Next.js API Route<br/>(app/api/*)
+    participant AI as AI Module / DB<br/>(lib/ai/models.ts)
+    participant Gemini as Gemini API
+    
+    Note over Client, NextApi: Security Boundary: API Keys never touch browser
+    
+    Client->>NextApi: Initiates AI Operation (Extract / Match)
+    
+    Note right of NextApi: Server-side Auth Check
+    
+    loop Fallback Mechanism (up to max attempts)
+        NextApi->>AI: Query available model
+        AI-->>NextApi: Return active model name
+        NextApi->>Gemini: Send prompt & JSON Schema
+        
+        alt Success
+            Gemini-->>NextApi: Raw JSON response
+        else Failure (503 / 429 Quota)
+            Gemini-->>NextApi: 503 / 429 Error
+            NextApi->>AI: Block model in DB temporarily
+            Note right of NextApi: Retry loop with next available model
+        end
+    end
+    
+    Note right of NextApi: Parse & Validate against Zod Schema
+    
+    NextApi-->>Client: Structured JSON Response
+```
 
 ## Database schema
 
