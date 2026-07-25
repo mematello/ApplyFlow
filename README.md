@@ -155,7 +155,7 @@ All tables are protected by Row Level Security — users can only read/write the
 ## Getting started
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/mematello/ApplyFlow.git
 cd applyflow
 npm install
 ```
