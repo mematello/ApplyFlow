@@ -44,6 +44,50 @@ Built to solve a real problem from my own job search: manually re-typing job pos
 
 ## Architecture
 
+### System Architecture
+
+```mermaid
+graph TD
+    subgraph Client["Client (Browser)"]
+        UI["React 19 / Next.js UI<br/><i>Dashboard & /new Form</i>"]
+    end
+
+    subgraph Server["Next.js Server (App Router)"]
+        MW["Middleware<br/><i>Session Verification</i>"]
+        ExtractRoute["/api/extract<br/><i>JD Extraction</i>"]
+        MatchRoute["/api/match<br/><i>Resume Fit Analysis</i>"]
+        CronRoute["/api/cron/reminders<br/><i>Scheduled Follow-ups</i>"]
+        AILib["lib/ai/models.ts<br/><i>Fallback & Rate Limiting</i>"]
+    end
+
+    subgraph Cloud["Backend & External Services"]
+        SupabaseDB[("Supabase Postgres<br/><i>Applications, Usage, RLS</i>")]
+        SupabaseAuth["Supabase Auth"]
+        SupabaseStorage["Supabase Storage<br/><i>Resume Files</i>"]
+        Gemini["Google Gemini API<br/><i>3.5-Flash / 3-Flash</i>"]
+        Resend["Resend API<br/><i>Email Reminders</i>"]
+    end
+
+    UI -->|HTTPS Requests| MW
+    MW --> ExtractRoute
+    MW --> MatchRoute
+    
+    ExtractRoute --> AILib
+    MatchRoute --> AILib
+    AILib -->|Prompt & Schema| Gemini
+    
+    ExtractRoute -->|Save Data| SupabaseDB
+    MatchRoute -->|Save Data| SupabaseDB
+    
+    UI -->|Auth Check| SupabaseAuth
+    UI -->|Upload Resumes| SupabaseStorage
+    
+    CronRoute -->|Query Due Reminders| SupabaseDB
+    CronRoute -->|Send Email| Resend
+```
+
+### Directory Structure
+
 ```text
 app/
   (protected)/          → authenticated dashboard + "/new" application flow
