@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { jobDescription } = body;
+    const { jobDescription, model: requestedModel } = body;
 
     if (!jobDescription || typeof jobDescription !== 'string') {
       return NextResponse.json(
@@ -94,7 +94,10 @@ Example Output:
       let activeModelName: string;
 
       try {
-        activeModelName = await getAvailableModel(user.id, excludedModels);
+        // NOTE: Since /api/extract and /api/match may run concurrently in parallel, 
+        // there is no strict guarantee both requests resolve to the identical model under simultaneous fallback.
+        // This is an intentional performance tradeoff for parallel execution speed.
+        activeModelName = await getAvailableModel(user.id, excludedModels, requestedModel);
       } catch (e: any) {
         if (e instanceof AllModelsExhaustedError) {
           return NextResponse.json({
@@ -142,7 +145,6 @@ Example Output:
             throw err1; // Trigger model fallback loop
           }
           console.error(`[Extract API] ${activeModelName} Attempt 1 schema parse failed, trying Attempt 2...`);
-          // Attempt 2 with prompt instruction 2 on same model
           rawJsonText = await executeModelCall(systemInstruction2);
           const validated = parseAndValidate(rawJsonText);
           await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });

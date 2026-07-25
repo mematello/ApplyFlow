@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { jobDescription, resumeText } = await req.json();
+    const { jobDescription, resumeText, model: requestedModel } = await req.json();
 
     if (!jobDescription || typeof jobDescription !== 'string') {
       return NextResponse.json({ error: 'jobDescription is required' }, { status: 400 });
@@ -76,7 +76,10 @@ ${resumeText}`;
       let activeModelName: string;
 
       try {
-        activeModelName = await getAvailableModel(user.id, excludedModels);
+        // NOTE: Since /api/extract and /api/match may run concurrently in parallel, 
+        // there is no strict guarantee both requests resolve to the identical model under simultaneous fallback.
+        // This is an intentional performance tradeoff for parallel execution speed.
+        activeModelName = await getAvailableModel(user.id, excludedModels, requestedModel);
       } catch (e: any) {
         if (e instanceof AllModelsExhaustedError) {
           return NextResponse.json({

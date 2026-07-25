@@ -96,19 +96,13 @@ export async function blockModelInDb(modelName: string, durationSeconds: number)
   }
 }
 
-export async function getAvailableModel(userId: string, excludeModels: string[] = []) {
+export async function getAvailableModel(
+  userId: string, 
+  excludeModels: string[] = [], 
+  requestedModel?: string
+) {
   const supabase = createServiceClient();
   
-  // 1. Fetch user's preferred model
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('preferred_model')
-    .eq('id', userId)
-    .single();
-
-  const preferredModelName = profile?.preferred_model || AI_MODELS[0].name;
-
-  // 2. Fetch current usage for all models today
   const today = new Date().toISOString().split('T')[0];
   const { data: usageData } = await supabase
     .from('ai_model_usage')
@@ -122,7 +116,29 @@ export async function getAvailableModel(userId: string, excludeModels: string[] 
     }
   }
 
-  // 3. Reorder models: put preferred model first, then the rest in default order
+  // 1. If requestedModel is passed and not excluded, check if it's currently available
+  if (requestedModel && !excludeModels.includes(requestedModel)) {
+    const usage = usageMap.get(requestedModel);
+    const isBlocked = usage?.blocked_until && new Date(usage.blocked_until) > new Date();
+    const modelConfig = AI_MODELS.find(m => m.name === requestedModel);
+    const limit = modelConfig?.dailyLimit ?? 1500;
+    const isExhausted = usage && usage.request_count >= limit;
+
+    if (!isBlocked && !isExhausted) {
+      return requestedModel;
+    }
+  }
+
+  // 2. Fetch user's preferred model
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('preferred_model')
+    .eq('id', userId)
+    .single();
+
+  const preferredModelName = profile?.preferred_model || AI_MODELS[0].name;
+
+  // 3. Reorder candidate models: preferred model first, then remaining
   const candidateModels = AI_MODELS.filter(m => !excludeModels.includes(m.name));
   const orderedModels = [
     ...candidateModels.filter(m => m.name === preferredModelName),
@@ -133,13 +149,13 @@ export async function getAvailableModel(userId: string, excludeModels: string[] 
     throw new AllModelsExhaustedError(60);
   }
 
-  // 4. Find the first available model
+  // 4. Find first available model
   let earliestReset = new Date();
-  earliestReset.setHours(24, 0, 0, 0); // Default reset is midnight
+  earliestReset.setHours(24, 0, 0, 0);
 
   for (const model of orderedModels) {
     const usage = usageMap.get(model.name);
-    if (!usage) return model.name; // No usage recorded yet, it's available
+    if (!usage) return model.name;
 
     const isBlocked = usage.blocked_until && new Date(usage.blocked_until) > new Date();
     const isExhausted = usage.request_count >= model.dailyLimit;
@@ -148,14 +164,12 @@ export async function getAvailableModel(userId: string, excludeModels: string[] 
       return model.name;
     }
 
-    // Track the earliest reset time across all models for the error message
     if (isBlocked) {
       const resetTime = new Date(usage.blocked_until);
       if (resetTime < earliestReset) earliestReset = resetTime;
     }
   }
 
-  // 5. If we get here, all models are exhausted or blocked
   const secondsUntilReset = Math.max(1, Math.ceil((earliestReset.getTime() - Date.now()) / 1000));
   throw new AllModelsExhaustedError(secondsUntilReset);
 }

@@ -1,72 +1,138 @@
 # ApplyFlow
 
-ApplyFlow is an AI-powered job application tracker designed to help you organize your job search, automatically extract data from job descriptions, and intelligently match your resume against role requirements.
+AI-powered job application tracker that turns a pasted job posting into a structured, trackable application — complete with an AI-generated fit assessment against your resume.
 
-*(Note: Please refer to `.agents/AGENTS.md` for the AI-assisted development conventions and standing rules used in this project.)*
+Built to solve a real problem from my own job search: manually re-typing job postings into a spreadsheet, then guessing whether a role is actually worth applying to, is tedious and error-prone. ApplyFlow automates both.
 
-## Features
+![ApplyFlow Demo](./docs/screenshots/applyflow-vid-demo.gif)
 
-- **Automated Data Extraction**: Paste a job description and have Gemini automatically extract the company name, role, tech stack, salary range, and more.
-- **Resume Matching**: Upload your resumes (PDF/DOCX) and the system will automatically score your fit for a role, generating a concise, first-person summary of the match for your own tracking notes.
-- **Smart Tracking**: Manage your applications through different stages (applied, interviewing, offered, rejected) and keep track of your next required actions.
-- **Automated Email Reminders**: Get daily email notifications for scheduled follow-ups and next action dates via Vercel Cron and Resend.
+## What it does
 
-## Tech Stack
+*   **Paste a job description** into the app.
+    ![New Job Application](./docs/screenshots/new_job_application.png)
+*   **AI extraction** — Gemini parses the raw text into structured fields: company, role, tech stack, salary range, location, source, recruiter contact, and notes.
+*   **AI fit analysis** — the same job description is compared against your uploaded resume, producing a role fit and culture fit score (1–5), a priority rating (low/medium/high), and a list of matched strengths vs. gaps.
+    ![AI Fit Analysis](./docs/screenshots/ai_fit_analysis.png)
+*   **Review & save** — both results populate a single form; edit anything before saving.
+*   **Track the pipeline** — every saved application moves through statuses (Draft → Applied → Screening → Interview → Offer / Rejected / Withdrawn) on a dashboard you can search and filter.
+    ![Dashboard View](./docs/screenshots/dashboard.png)
+*   **Optional follow-up reminders** — set a "next action date" on any application, and a scheduled job emails you a reminder ahead of it. Leave it blank if you don't need a nudge.
 
-- **Frontend / Backend**: [Next.js](https://nextjs.org/) (App Router, Server Actions, API Routes)
-- **Database / Auth**: [Supabase](https://supabase.com/) & PostgreSQL
-- **AI Processing**: Google [Gemini API](https://ai.google.dev/) (gemini-3-flash-preview series)
-- **Email Delivery**: [Resend](https://resend.com/)
+## Tech stack
 
-## Local Setup
+**Frontend**
+*   Next.js 15 (App Router), React 19
+*   Tailwind CSS v4
+*   next-themes (dark/light mode)
+*   Lucide React (icons)
 
-1. **Clone and Install**
-   ```bash
-   git clone https://github.com/mematello/ApplyFlow.git
-   cd ApplyFlow
-   npm install
-   ```
+**Backend**
+*   Next.js API routes (`/api/*`)
+*   Supabase (PostgreSQL, Auth, Storage)
+*   Row Level Security enforced at the database level — every query is scoped to `auth.uid()`
 
-2. **Environment Variables**
-   Create a `.env.local` file in the root directory with the following keys:
-   ```env
-   # Supabase configuration
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+**AI**
+*   Google Gemini API (`@google/genai`)
+*   Multi-model fallback chain (`gemini-3.5-flash` → `gemini-3-flash-preview` → `gemini-3.1-flash-lite-preview`) with automatic retry when a model returns a 503 (high demand) or 429 (quota exceeded), so a single provider hiccup doesn't fail the request.
+*   Temporary model blocking persisted in Postgres, shared across concurrent requests.
 
-   # AI integration
-   GEMINI_API_KEY=your_google_gemini_api_key
+**Document processing**
+*   `pdf-parse` and `mammoth` for extracting text from uploaded resumes (PDF/DOCX)
 
-   # Email delivery & Cron security
-   RESEND_API_KEY=your_resend_api_key
-   CRON_SECRET=a_secure_random_string_used_by_vercel_cron
-   ```
+**Notifications**
+*   Resend, used by a scheduled cron route to send follow-up reminder emails
 
-3. **Database Migrations**
-   To set up your Supabase database schema, you must apply the SQL migrations found in the `supabase/migrations/` folder.
-   **ApplyFlow uses a manual migration workflow.** Migrations are written as numbered `.sql` files, but they are applied manually via the Supabase Dashboard SQL editor rather than using the CLI `db push` command. Execute them in numerical order (e.g., `0001_init.sql`, `0002_rls.sql`, etc.).
+## Architecture
 
-4. **Run the Development Server**
-   ```bash
-   npm run dev
-   ```
-   Open [http://localhost:3000](http://localhost:3000) to view the app.
+```text
+app/
+  (protected)/          → authenticated dashboard + "/new" application flow
+  api/
+    extract/            → AI job-description extraction endpoint
+    match/              → AI resume-fit analysis endpoint
+    cron/reminders/     → scheduled follow-up email job
+lib/
+  ai/models.ts          → model selection, fallback, and error-parsing logic
+  supabase/             → browser / server / service-role Supabase clients
+supabase/
+  migrations/           → full database schema (see below)
+docs/
+  schema.md, prompts.md → internal notes on DB structure and prompt design
+```
 
-## AI Model Fallback System
+**Request flow for AI operations:** client → Next.js API route (auth-checked server-side) → Gemini, with automatic fallback across models on failure → structured response validated against a schema → client. API keys never touch the browser.
 
-Because AI API quotas can be exhausted during heavy testing or bulk application entry, ApplyFlow includes a specialized internal fallback infrastructure. 
+## Database schema
 
-The system tracks daily request counts for each Gemini model in the database (`ai_model_usage` table). If the primary model hits a `429 Quota Exceeded` error, the system records the exact block time and automatically falls back to secondary models seamlessly. This ensures uninterrupted extraction and matching without needing manual intervention. You can configure your preferred primary model directly in the app's settings.
+| Table | Purpose |
+| :--- | :--- |
+| `profiles` | Per-user settings, including preferred AI model |
+| `applications` | Core job application records — extracted fields, AI fit scores, pipeline status |
+| `interview_stages` | Timestamped stages/notes tied to a specific application |
+| `resumes` | Uploaded resume metadata + extracted text (files live in Supabase Storage) |
+| `ai_model_usage` | Tracks daily request counts and temporary blocks per Gemini model |
 
-The current fallback chain is:
-1. `gemini-3.5-flash` (Primary/Default, capped at 20 req/day)
-2. `gemini-3-flash-preview` (Fallback, ~1500 req/day)
-3. `gemini-3.1-flash-lite-preview` (Last resort, ~1500 req/day)
+All tables are protected by Row Level Security — users can only read/write their own data.
 
-## Roadmap (Phase 2+)
+## Getting started
 
-- **URL-Based Job Ingestion**: Automatically scrape and extract job details just by pasting a URL.
-- **Duplicate Detection**: Warn users if they are applying to a role they've already tracked.
-- **Browser Extension**: A companion extension to capture job details directly from job boards.
-- **Multi-User Support**: Transition from a solo-developer tool to a multi-tenant platform.
+```bash
+git clone <repo-url>
+cd applyflow
+npm install
+```
+
+Create a `.env.local` with:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+GEMINI_API_KEY=
+RESEND_API_KEY=
+CRON_SECRET=
+```
+
+Set up the database by creating a Supabase project and applying the SQL files in `supabase/migrations/` (via `npx supabase db push` locally, or pasted into the Supabase SQL editor).
+*(Note: If running the database strictly locally via Docker instead of the cloud, run `npx supabase start` before pushing migrations).*
+
+```bash
+npm run dev
+```
+
+## Notable engineering decisions
+
+*   **Resilient AI calls:** rather than letting a single Gemini outage break the extraction flow, the app maintains an ordered fallback list of models, persists temporary blocks to the database (shared across concurrent requests), and returns clean, user-facing error messages instead of raw provider errors.
+*   **Parallel AI execution:** extraction and resume matching don't depend on each other, so both requests fire concurrently and resolve to the same model where possible — cutting perceived wait time roughly in half.
+*   **Honest AI framing:** the fit-analysis notes are deliberately written in the third person, as an analyst's assessment of the candidate — not first person "as if I wrote this myself" — so the tool never misrepresents AI output as the user's own reflection.
+
+## Roadmap
+
+*   [ ] Priority-based sort/filter on the dashboard
+*   [ ] Resume versioning tied to specific applications
+*   [ ] Analytics view (response rates, interview conversion, common tech stack requests)
+*   [ ] Browser extension for one-click capture from job boards
+
+## License
+
+MIT License
+
+Copyright (c) 2026
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

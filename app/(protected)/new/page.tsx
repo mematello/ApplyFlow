@@ -135,13 +135,22 @@ export default function NewApplicationPage() {
     if (!jobDescription) return;
     setIsExtracting(true);
     setToast(null);
-    try {
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobDescription }),
-      });
-      
+
+    const currentResume = resumes.find(r => r.is_current);
+    const hasResumeToMatch = Boolean(currentResume && currentResume.extracted_text);
+
+    if (hasResumeToMatch) {
+      setIsMatching(true);
+    }
+
+    const selectedModel = activeModelName || preferredModel || "gemini-3.5-flash";
+
+    // 1. Prepare Extract Promise
+    const extractPromise = fetch("/api/extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobDescription, model: selectedModel }),
+    }).then(async (res) => {
       let data: any = {};
       try {
         const text = await res.text();
@@ -149,114 +158,148 @@ export default function NewApplicationPage() {
       } catch {
         data = { error: res.statusText || `Server returned status ${res.status}` };
       }
+      return { ok: res.ok, status: res.status, data };
+    });
 
-      if (!res.ok) {
-        let errorMsg = data.message || data.error || `Extraction failed (${res.status})`;
+    // 2. Prepare Match Promise (runs in parallel if candidate resume exists)
+    const matchPromise = hasResumeToMatch
+      ? fetch("/api/match", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jobDescription,
+            resumeText: currentResume!.extracted_text,
+            model: selectedModel,
+          }),
+        }).then(async (res) => {
+          let data: any = {};
+          try {
+            const text = await res.text();
+            data = JSON.parse(text);
+          } catch {
+            data = { error: res.statusText || `Match server status ${res.status}` };
+          }
+          return { ok: res.ok, status: res.status, data };
+        })
+      : Promise.resolve(null);
+
+    try {
+      const [extractResult, matchResult] = await Promise.allSettled([extractPromise, matchPromise]);
+
+      setIsExtracting(false);
+      setIsMatching(false);
+
+      // Handle Extract outcome
+      if (extractResult.status === 'rejected' || !extractResult.value?.ok) {
+        const resObj = extractResult.status === 'fulfilled' ? extractResult.value : null;
+        const data = resObj?.data || {};
+        const status = resObj?.status || 500;
+
+        let errorMsg = data.message || data.error || `Extraction failed (${status})`;
         if (typeof errorMsg !== 'string') {
           errorMsg = JSON.stringify(errorMsg);
         }
 
-        if (res.status === 429) {
+        if (status === 429) {
           const min = Math.ceil((data.retryAfterSeconds || 60) / 60);
           errorMsg = `All AI models are currently at capacity. Please try again after ${min} minute${min !== 1 ? 's' : ''}.`;
-        } else if (res.status === 503 || data.error === 'service_unavailable') {
+        } else if (status === 503 || data.error === 'service_unavailable') {
           errorMsg = data.message || "The AI model is currently experiencing high demand. Please try again in a few moments.";
         }
         throw new Error(errorMsg);
       }
-      
-      // Update active model name if API fallback happened
-      if (data.model_used) {
-        setActiveModelName(data.model_used);
+
+      const extractData = extractResult.value.data;
+      const extractModelUsed = extractData.model_used;
+
+      const extracted = extractData.data || extractData;
+
+      // Handle Match outcome
+      let matchSuccess = false;
+      let matchErrorType: string | null = null;
+      let matchedData: any = null;
+      let matchModelUsed: string | null = null;
+
+      if (hasResumeToMatch && matchResult && matchResult.status === 'fulfilled' && matchResult.value) {
+        const mRes = matchResult.value;
+        matchModelUsed = mRes.data?.model_used || null;
+
+        if (mRes.ok && mRes.data?.data) {
+          matchSuccess = true;
+          matchedData = mRes.data.data;
+        } else {
+          matchErrorType = mRes.status === 429 ? '429' : (mRes.status === 503 || mRes.data?.error === 'service_unavailable' ? '503' : 'other');
+        }
       }
-      
-      // The API returns the parsed schema inside a `data` envelope
-      const extracted = data.data || data; 
-      
-      // Extraction completed successfully
-      setFormData(prev => ({
-        ...prev,
-        company_name: extracted.company_name || "",
-        role: extracted.role || "",
-        tech_stack: extracted.tech_stack || [],
-        salary_range: extracted.salary_range || "",
-        location: extracted.location || "",
-        source: extracted.source || "",
-        recruiter_name: extracted.recruiter_name || "",
-        contact_info: extracted.contact_info || "",
-        notes: extracted.notes || "",
-        raw_jd: jobDescription
-      }));
-      setIsExtracting(false);
 
-      // Run match phase if current resume text exists
-      const currentResume = resumes.find(r => r.is_current);
-      if (currentResume && currentResume.extracted_text) {
-        setToast({ message: "Extraction complete! Analyzing fit with your resume...", type: 'success' });
-        setIsMatching(true);
-        try {
-          const matchRes = await fetch("/api/match", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ jobDescription, resumeText: currentResume.extracted_text })
-          });
-          
-          let matchData: any = {};
-          try {
-            const text = await matchRes.text();
-            matchData = JSON.parse(text);
-          } catch {
-            matchData = { error: matchRes.statusText || `Match server status ${matchRes.status}` };
+      // Track active model based on extraction model used
+      if (extractModelUsed) {
+        setActiveModelName(extractModelUsed);
+      }
+
+      // Single atomic form state update using loose null checks (!= null)
+      const newSuggested = new Set<string>();
+
+      setFormData(prev => {
+        const updated = {
+          ...prev,
+          company_name: extracted.company_name || "",
+          role: extracted.role || "",
+          tech_stack: extracted.tech_stack || [],
+          salary_range: extracted.salary_range || "",
+          location: extracted.location || "",
+          source: extracted.source || "",
+          recruiter_name: extracted.recruiter_name || "",
+          contact_info: extracted.contact_info || "",
+          notes: extracted.notes || "",
+          raw_jd: jobDescription,
+        };
+
+        if (matchSuccess && matchedData) {
+          if (matchedData.role_fit != null) { updated.role_fit = String(matchedData.role_fit); newSuggested.add("role_fit"); }
+          if (matchedData.culture_fit != null) { updated.culture_fit = String(matchedData.culture_fit); newSuggested.add("culture_fit"); }
+          if (matchedData.priority != null) { updated.priority = String(matchedData.priority); newSuggested.add("priority"); }
+
+          let combinedNotes = extracted.notes || "";
+          if (matchedData.notes) {
+            combinedNotes += combinedNotes ? `\n\n${matchedData.notes}` : matchedData.notes;
           }
-
-          if (matchData.model_used) {
-            setActiveModelName(matchData.model_used);
+          if (combinedNotes !== prev.notes) {
+            updated.notes = combinedNotes;
+            newSuggested.add("notes");
           }
+        }
 
-          if (matchRes.ok && matchData.data) {
-            const m = matchData.data;
-            const newSuggested = new Set<string>();
+        return updated;
+      });
 
-            let newNotes = extracted.notes || "";
-            if (m.notes) {
-              newNotes += newNotes ? `\n\n${m.notes}` : m.notes;
-            }
+      if (newSuggested.size > 0) {
+        setAiSuggestedFields(newSuggested);
+      }
 
-            setFormData(prev => {
-              const updated = { ...prev };
-              if (m.role_fit !== null) { updated.role_fit = String(m.role_fit); newSuggested.add("role_fit"); }
-              if (m.culture_fit !== null) { updated.culture_fit = String(m.culture_fit); newSuggested.add("culture_fit"); }
-              if (m.priority !== null) { updated.priority = m.priority; newSuggested.add("priority"); }
-              if (newNotes !== prev.notes) { updated.notes = newNotes; newSuggested.add("notes"); }
-              return updated;
-            });
-            
-            setAiSuggestedFields(newSuggested);
-            setToast({ message: "Extraction & Match Analysis complete!", type: 'success' });
+      // Toast Notification
+      if (hasResumeToMatch) {
+        if (matchSuccess) {
+          if (extractModelUsed && matchModelUsed && extractModelUsed !== matchModelUsed) {
+            setToast({ message: `Extraction & Match Analysis complete! (${extractModelUsed} / ${matchModelUsed})`, type: 'success' });
           } else {
-            if (matchRes.status === 429) {
-              const min = Math.ceil((matchData.retryAfterSeconds || 60) / 60);
-              setToast({ message: `Extraction complete! (AI models at capacity, try again in ${min} min.)`, type: 'error' });
-            } else if (matchRes.status === 503 || matchData.error === 'service_unavailable') {
-              setToast({ message: "Extraction complete! (AI models under high demand)", type: 'error' });
-            } else {
-              setToast({ message: "Extraction complete! (Match analysis failed)", type: 'error' });
-            }
+            setToast({ message: "Extraction & Match Analysis complete!", type: 'success' });
           }
-        } catch (matchErr) {
-          console.error("Match error:", matchErr);
+        } else if (matchErrorType === '429') {
+          setToast({ message: "Extraction complete! (AI models at capacity for match analysis)", type: 'error' });
+        } else if (matchErrorType === '503') {
+          setToast({ message: "Extraction complete! (AI models under high demand for match analysis)", type: 'error' });
+        } else {
           setToast({ message: "Extraction complete! (Match analysis failed)", type: 'error' });
-        } finally {
-          setIsMatching(false);
         }
       } else {
-         // No resume to match against
-         setToast({ message: "Extraction complete!", type: 'success' });
+        setToast({ message: "Extraction complete!", type: 'success' });
       }
 
     } catch (err: any) {
       setToast({ message: err.message, type: 'error' });
-      setIsExtracting(false); // Ensure it's reset on error
+      setIsExtracting(false);
+      setIsMatching(false);
     }
   };
 
