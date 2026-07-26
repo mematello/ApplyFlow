@@ -182,7 +182,7 @@ npm run dev
 
 *   **Resilient AI calls:** rather than letting a single Gemini outage break the extraction flow, the app maintains an ordered fallback list of models, persists temporary blocks to the database (shared across concurrent requests), and returns clean, user-facing error messages instead of raw provider errors.
 *   **Parallel AI execution:** extraction and resume matching don't depend on each other, so both requests fire concurrently and resolve to the same model where possible — cutting perceived wait time roughly in half.
-*   **Honest AI framing:** the fit-analysis notes are deliberately written in the third person, as an analyst's assessment of the candidate — not first person "as if I wrote this myself" — so the tool never misrepresents AI output as the user's own reflection.
+*   **Defense-in-depth data scoping:** Row Level Security (RLS) is enforced strictly at the database layer (scoping all access to `auth.uid()`), while server-side API routes explicitly re-scope user queries as a secondary defense layer against accidental cross-tenant data leaks.
 
 ## Roadmap
 
