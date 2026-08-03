@@ -24,6 +24,7 @@ const PatchSchema = z.object({
   rejection_reason: z.string().nullable(),
   next_action: z.string().nullable(),
   next_action_date: z.string().nullable(),
+  reminder_enabled: z.boolean().optional(),
   interview_stage: z.string().nullable(),
   interview_notes: z.string().nullable(),
 }).partial();

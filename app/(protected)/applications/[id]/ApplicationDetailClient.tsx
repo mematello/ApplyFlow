@@ -37,6 +37,7 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
     culture_fit: initialApplication.culture_fit || "",
     rejection_reason: initialApplication.rejection_reason || "",
     notes: initialApplication.notes || "",
+    reminder_enabled: initialApplication.reminder_enabled || false,
   });
 
   const [techInput, setTechInput] = useState("");
@@ -275,7 +276,16 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
             </div>
             <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Date Applied</label><input type="date" name="date_applied" value={formData.date_applied} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
             <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Next Action</label><input type="text" name="next_action" value={formData.next_action} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
-            <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Next Action Date</label><input type="date" name="next_action_date" value={formData.next_action_date} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
+            <div>
+              <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Next Action Date</label>
+              <div className="flex flex-col gap-3">
+                <input type="date" name="next_action_date" value={formData.next_action_date} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="reminder_enabled" name="reminder_enabled" checked={formData.reminder_enabled} onChange={handleInputChange} className="w-4 h-4 rounded bg-white dark:bg-zinc-900 border-gray-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500" />
+                  <label htmlFor="reminder_enabled" className="text-sm font-medium text-gray-700 dark:text-zinc-300">Enable Email Reminder</label>
+                </div>
+              </div>
+            </div>
             <div>
               <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Resume Version</label>
               <div className="flex gap-2">

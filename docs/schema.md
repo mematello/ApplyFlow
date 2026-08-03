@@ -47,6 +47,7 @@ Core entity for tracking job applications.
 - `updated_at` (TIMESTAMPTZ, NOT NULL, Default `NOW()`, auto-updates via trigger)
 - `interview_stage` (TEXT, nullable)
 - `interview_notes` (TEXT, nullable)
+- `reminder_enabled` (BOOLEAN, Default `FALSE`)
 - `next_action_reminder_sent` (BOOLEAN, Default `FALSE`)
 
 ### `interview_stages`

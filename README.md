@@ -17,6 +17,7 @@ Built to solve a real problem from my own job search: manually re-typing job pos
 *   **Track the pipeline** — every saved application moves through statuses (Draft → Applied → Screening → Interview → Offer / Rejected / Withdrawn) on a dashboard you can search and filter.
     ![Dashboard View](./docs/screenshots/dashboard.png)
 *   **Optional follow-up reminders** — set a "next action date" on any application, and a scheduled job emails you a reminder ahead of it. Leave it blank if you don't need a nudge.
+    ![Reminder Notification](./docs/screenshots/reminder_notification.jpg)
 
 ## Tech stack
 
