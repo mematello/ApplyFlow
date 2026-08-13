@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI, Type } from '@google/genai';
+import { Type } from '@google/genai';
 import { JobExtractionSchema } from '../../../lib/schemas/extraction';
 import { createClient } from '../../../lib/supabase/server';
 import { getAvailableModel, AllModelsExhaustedError, parseGeminiError, blockModelInDb, AI_MODELS } from '../../../lib/ai/models';
 import { createServiceClient } from '../../../lib/supabase/serviceClient';
-
-let ai: GoogleGenAI;
+import { getProvider, AiProvider } from '../../../lib/ai/provider';
+import { decrypt } from '../../../lib/utils/encryption';
 
 const geminiSchema = {
   type: Type.OBJECT,
@@ -39,13 +39,6 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!ai) {
-      if (!process.env.GEMINI_API_KEY) {
-        return NextResponse.json({ error: 'GEMINI_API_KEY is not set. Please check your .env.local file and restart the dev server.', partialData: null }, { status: 500 });
-      }
-      ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    }
-
     const body = await req.json();
     const { jobDescription, model: requestedModel } = body;
 
@@ -55,6 +48,71 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    // --- Provider and BYOK Setup ---
+    let aiProvider: AiProvider | null = null;
+    let hasCustomKey = false;
+
+    // 1. Fetch user's preferred provider
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('preferred_provider')
+      .eq('id', user.id)
+      .single();
+    
+    const preferredProvider = profile?.preferred_provider;
+
+    // 2. Look for custom key if preferred_provider is set
+    if (preferredProvider) {
+      const { data: keyData } = await supabase
+        .from('user_api_keys')
+        .select('encrypted_key, iv, auth_tag')
+        .eq('user_id', user.id)
+        .eq('provider', preferredProvider)
+        .single();
+
+      if (keyData) {
+        let decryptedKey: string | null = null;
+        try {
+          decryptedKey = decrypt({
+            encryptedKey: keyData.encrypted_key,
+            iv: keyData.iv,
+            authTag: keyData.auth_tag
+          });
+        } catch (decryptErr) {
+          console.error(`[Extract API] Decryption failed for user ${user.id}:`, decryptErr);
+          return NextResponse.json(
+            { error: 'Decryption failed. Your API key could not be read. Please re-enter your key in your profile.' },
+            { status: 401 }
+          );
+        }
+
+        if (decryptedKey) {
+          try {
+            aiProvider = getProvider(preferredProvider, decryptedKey);
+            hasCustomKey = true;
+          } catch (providerErr) {
+            console.error(`[Extract API] Provider instantiation failed for ${preferredProvider}:`, providerErr);
+            // Fall back to server key by leaving hasCustomKey = false
+          }
+        }
+      }
+    }
+
+    // 3. Fallback path if no custom provider/key is configured or getProvider failed
+    if (!hasCustomKey) {
+      if (!process.env.GEMINI_API_KEY) {
+        return NextResponse.json({ error: 'GEMINI_API_KEY is not set. Please check your .env.local file.', partialData: null }, { status: 500 });
+      }
+      try {
+        aiProvider = getProvider('google', process.env.GEMINI_API_KEY);
+      } catch (err) {
+        console.error('[Extract API] Fallback provider instantiation failed:', err);
+        return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
+      }
+    }
+
+    // --- End BYOK Setup ---
 
     const oneShotExample = `
 
@@ -94,10 +152,7 @@ Example Output:
       let activeModelName: string;
 
       try {
-        // NOTE: Since /api/extract and /api/match may run concurrently in parallel, 
-        // there is no strict guarantee both requests resolve to the identical model under simultaneous fallback.
-        // This is an intentional performance tradeoff for parallel execution speed.
-        activeModelName = await getAvailableModel(user.id, excludedModels, requestedModel);
+        activeModelName = await getAvailableModel(user.id, excludedModels, requestedModel, hasCustomKey);
       } catch (e: any) {
         if (e instanceof AllModelsExhaustedError) {
           return NextResponse.json({
@@ -109,18 +164,8 @@ Example Output:
       }
 
       const executeModelCall = async (instruction: string): Promise<string> => {
-        const response = await ai.models.generateContent({
-          model: activeModelName,
-          contents: jobDescription,
-          config: {
-            systemInstruction: instruction,
-            responseMimeType: 'application/json',
-            responseSchema: geminiSchema,
-            temperature: 0.1,
-          }
-        });
-        if (!response.text) throw new Error("No response text from AI model");
-        return response.text;
+        // aiProvider is guaranteed to be set here either from custom key or fallback
+        return await aiProvider!.generateObject(instruction, geminiSchema, activeModelName, jobDescription);
       };
 
       const parseAndValidate = (rawText: string) => {
@@ -137,34 +182,49 @@ Example Output:
         try {
           rawJsonText = await executeModelCall(systemInstruction1);
           const validated = parseAndValidate(rawJsonText);
-          await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
+          if (!hasCustomKey) {
+            await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
+          }
           return NextResponse.json({ data: validated, model_used: activeModelName });
         } catch (err1: any) {
           const parsed1 = parseGeminiError(err1);
-          if (parsed1.isQuotaError || parsed1.isUnavailableError) {
-            throw err1; // Trigger model fallback loop
+          if (parsed1.isQuotaError || parsed1.isUnavailableError || parsed1.statusCode === 400 || parsed1.statusCode === 401 || parsed1.statusCode === 403) {
+            throw err1; // Trigger model fallback loop or auth exit
           }
           console.error(`[Extract API] ${activeModelName} Attempt 1 schema parse failed, trying Attempt 2...`);
           rawJsonText = await executeModelCall(systemInstruction2);
           const validated = parseAndValidate(rawJsonText);
-          await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
+          if (!hasCustomKey) {
+            await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
+          }
           return NextResponse.json({ data: validated, model_used: activeModelName });
         }
       } catch (modelErr: any) {
         const parsedErr = parseGeminiError(modelErr);
         lastError = parsedErr;
 
+        if (hasCustomKey && (parsedErr.statusCode === 400 || parsedErr.statusCode === 401 || parsedErr.statusCode === 403)) {
+          return NextResponse.json(
+            { error: 'Your custom API key is invalid or expired. Please update it in your profile.' },
+            { status: 401 }
+          );
+        }
+
         if (parsedErr.isQuotaError) {
           const blockSecs = parsedErr.retryAfterSeconds || 86400;
-          await blockModelInDb(activeModelName, blockSecs);
+          if (!hasCustomKey) {
+            await blockModelInDb(activeModelName, blockSecs);
+          }
           excludedModels.push(activeModelName);
-          console.warn(`[Extract API] Model ${activeModelName} hit quota. Blocked for ${blockSecs}s. Trying fallback model...`);
+          console.warn(`[Extract API] Model ${activeModelName} hit quota. Trying fallback model...`);
           continue;
         } else if (parsedErr.isUnavailableError) {
           const blockSecs = parsedErr.retryAfterSeconds || 300;
-          await blockModelInDb(activeModelName, blockSecs);
+          if (!hasCustomKey) {
+            await blockModelInDb(activeModelName, blockSecs);
+          }
           excludedModels.push(activeModelName);
-          console.warn(`[Extract API] Model ${activeModelName} unavailable (503/high demand). Blocked for ${blockSecs}s. Trying fallback model...`);
+          console.warn(`[Extract API] Model ${activeModelName} unavailable (503). Trying fallback model...`);
           continue;
         } else {
           console.error("[Extract API] Extraction error:", parsedErr.message);

@@ -43,6 +43,16 @@ export default async function SettingsPage() {
     console.error("Error fetching resumes:", resumesError);
   }
 
+  // Fetch safe API Keys metadata (explicitly excluding encrypted_key, iv, auth_tag)
+  const { data: apiKeys, error: keysError } = await supabase
+    .from('user_api_keys')
+    .select('provider, created_at')
+    .eq('user_id', user.id);
+
+  if (keysError) {
+    console.error("Error fetching API keys metadata:", keysError);
+  }
+
   return (
     <div className="max-w-2xl mx-auto p-4 md:p-8 text-gray-900 dark:text-zinc-100">
       <div className="mb-8">
@@ -56,6 +66,7 @@ export default async function SettingsPage() {
         initialProfile={profile} 
         applications={applications || []} 
         resumes={resumes || []}
+        apiKeys={apiKeys || []}
         userEmail={user.email || ""} 
       />
     </div>

@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenAI, Type } from '@google/genai';
+import { Type } from '@google/genai';
 import { MatchAssessmentSchema } from '../../../lib/schemas/matching';
 import { createClient } from '../../../lib/supabase/server';
 import { getAvailableModel, AllModelsExhaustedError, parseGeminiError, blockModelInDb, AI_MODELS } from '../../../lib/ai/models';
 import { createServiceClient } from '../../../lib/supabase/serviceClient';
-
-let ai: GoogleGenAI;
+import { getProvider, AiProvider } from '../../../lib/ai/provider';
+import { decrypt } from '../../../lib/utils/encryption';
 
 const geminiMatchSchema = {
   type: Type.OBJECT,
@@ -41,12 +41,70 @@ export async function POST(req: Request) {
       });
     }
 
-    if (!ai) {
+    // --- Provider and BYOK Setup ---
+    let aiProvider: AiProvider | null = null;
+    let hasCustomKey = false;
+
+    // 1. Fetch user's preferred provider
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('preferred_provider')
+      .eq('id', user.id)
+      .single();
+    
+    const preferredProvider = profile?.preferred_provider;
+
+    // 2. Look for custom key if preferred_provider is set
+    if (preferredProvider) {
+      const { data: keyData } = await supabase
+        .from('user_api_keys')
+        .select('encrypted_key, iv, auth_tag')
+        .eq('user_id', user.id)
+        .eq('provider', preferredProvider)
+        .single();
+
+      if (keyData) {
+        let decryptedKey: string | null = null;
+        try {
+          decryptedKey = decrypt({
+            encryptedKey: keyData.encrypted_key,
+            iv: keyData.iv,
+            authTag: keyData.auth_tag
+          });
+        } catch (decryptErr) {
+          console.error(`[Match API] Decryption failed for user ${user.id}:`, decryptErr);
+          return NextResponse.json(
+            { error: 'Decryption failed. Your API key could not be read. Please re-enter your key in your profile.' },
+            { status: 401 }
+          );
+        }
+
+        if (decryptedKey) {
+          try {
+            aiProvider = getProvider(preferredProvider, decryptedKey);
+            hasCustomKey = true;
+          } catch (providerErr) {
+            console.error(`[Match API] Provider instantiation failed for ${preferredProvider}:`, providerErr);
+            // Fall back to server key by leaving hasCustomKey = false
+          }
+        }
+      }
+    }
+
+    // 3. Fallback path if no custom provider/key is configured or getProvider failed
+    if (!hasCustomKey) {
       if (!process.env.GEMINI_API_KEY) {
         return NextResponse.json({ error: 'GEMINI_API_KEY is missing' }, { status: 500 });
       }
-      ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      try {
+        aiProvider = getProvider('google', process.env.GEMINI_API_KEY);
+      } catch (err) {
+        console.error('[Match API] Fallback provider instantiation failed:', err);
+        return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
+      }
     }
+
+    // --- End BYOK Setup ---
 
     const systemInstruction = `You are an expert technical recruiter matching candidates to job descriptions.
 Your task is to analyze the provided Job Description against the Candidate's Resume.
@@ -76,10 +134,7 @@ ${resumeText}`;
       let activeModelName: string;
 
       try {
-        // NOTE: Since /api/extract and /api/match may run concurrently in parallel, 
-        // there is no strict guarantee both requests resolve to the identical model under simultaneous fallback.
-        // This is an intentional performance tradeoff for parallel execution speed.
-        activeModelName = await getAvailableModel(user.id, excludedModels, requestedModel);
+        activeModelName = await getAvailableModel(user.id, excludedModels, requestedModel, hasCustomKey);
       } catch (e: any) {
         if (e instanceof AllModelsExhaustedError) {
           return NextResponse.json({
@@ -91,21 +146,13 @@ ${resumeText}`;
       }
 
       try {
-        const response = await ai.models.generateContent({
-          model: activeModelName,
-          contents: prompt,
-          config: {
-            systemInstruction,
-            responseMimeType: 'application/json',
-            responseSchema: geminiMatchSchema,
-            temperature: 0.1,
-          }
-        });
+        // aiProvider is guaranteed to be set here either from custom key or fallback
+        const rawJsonText = await aiProvider!.generateObject(systemInstruction, geminiMatchSchema, activeModelName, prompt);
         
-        await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
+        if (!hasCustomKey) {
+          await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
+        }
         
-        const rawJsonText = response.text || "";
-        if (!rawJsonText) throw new Error("No response text from AI model");
         const firstBrace = rawJsonText.indexOf('{');
         const lastBrace = rawJsonText.lastIndexOf('}');
         if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON found");
@@ -119,17 +166,28 @@ ${resumeText}`;
         const parsedErr = parseGeminiError(modelErr);
         lastError = parsedErr;
 
+        if (hasCustomKey && (parsedErr.statusCode === 400 || parsedErr.statusCode === 401 || parsedErr.statusCode === 403)) {
+          return NextResponse.json(
+            { error: 'Your custom API key is invalid or expired. Please update it in your profile.' },
+            { status: 401 }
+          );
+        }
+
         if (parsedErr.isQuotaError) {
           const blockSecs = parsedErr.retryAfterSeconds || 86400;
-          await blockModelInDb(activeModelName, blockSecs);
+          if (!hasCustomKey) {
+            await blockModelInDb(activeModelName, blockSecs);
+          }
           excludedModels.push(activeModelName);
-          console.warn(`[Match API] Model ${activeModelName} hit quota. Blocked for ${blockSecs}s. Trying fallback model...`);
+          console.warn(`[Match API] Model ${activeModelName} hit quota. Trying fallback model...`);
           continue;
         } else if (parsedErr.isUnavailableError) {
           const blockSecs = parsedErr.retryAfterSeconds || 300;
-          await blockModelInDb(activeModelName, blockSecs);
+          if (!hasCustomKey) {
+            await blockModelInDb(activeModelName, blockSecs);
+          }
           excludedModels.push(activeModelName);
-          console.warn(`[Match API] Model ${activeModelName} unavailable (503/high demand). Blocked for ${blockSecs}s. Trying fallback model...`);
+          console.warn(`[Match API] Model ${activeModelName} unavailable (503). Trying fallback model...`);
           continue;
         } else {
           console.error("[Match API] Error:", parsedErr.message);

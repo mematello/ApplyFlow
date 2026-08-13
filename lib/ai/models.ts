@@ -99,10 +99,40 @@ export async function blockModelInDb(modelName: string, durationSeconds: number)
 export async function getAvailableModel(
   userId: string, 
   excludeModels: string[] = [], 
-  requestedModel?: string
+  requestedModel?: string,
+  hasCustomKey: boolean = false
 ) {
   const supabase = createServiceClient();
-  
+
+  // 1. Fetch user's preferred model
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('preferred_model')
+    .eq('id', userId)
+    .single();
+
+  const preferredModelName = profile?.preferred_model || AI_MODELS[0].name;
+
+  // 2. Reorder candidate models: preferred model first, then remaining
+  const candidateModels = AI_MODELS.filter(m => !excludeModels.includes(m.name));
+  const orderedModels = [
+    ...candidateModels.filter(m => m.name === preferredModelName),
+    ...candidateModels.filter(m => m.name !== preferredModelName)
+  ];
+
+  if (orderedModels.length === 0) {
+    throw new AllModelsExhaustedError(60);
+  }
+
+  // 3. Custom Key Path: Bypass global ai_model_usage tracking completely.
+  if (hasCustomKey) {
+    if (requestedModel && !excludeModels.includes(requestedModel)) {
+      return requestedModel;
+    }
+    return orderedModels[0].name;
+  }
+
+  // 4. Server Key Path: Enforce global rate limits via ai_model_usage table.
   const today = new Date().toISOString().split('T')[0];
   const { data: usageData } = await supabase
     .from('ai_model_usage')
@@ -116,7 +146,6 @@ export async function getAvailableModel(
     }
   }
 
-  // 1. If requestedModel is passed and not excluded, check if it's currently available
   if (requestedModel && !excludeModels.includes(requestedModel)) {
     const usage = usageMap.get(requestedModel);
     const isBlocked = usage?.blocked_until && new Date(usage.blocked_until) > new Date();
@@ -129,27 +158,6 @@ export async function getAvailableModel(
     }
   }
 
-  // 2. Fetch user's preferred model
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('preferred_model')
-    .eq('id', userId)
-    .single();
-
-  const preferredModelName = profile?.preferred_model || AI_MODELS[0].name;
-
-  // 3. Reorder candidate models: preferred model first, then remaining
-  const candidateModels = AI_MODELS.filter(m => !excludeModels.includes(m.name));
-  const orderedModels = [
-    ...candidateModels.filter(m => m.name === preferredModelName),
-    ...candidateModels.filter(m => m.name !== preferredModelName)
-  ];
-
-  if (orderedModels.length === 0) {
-    throw new AllModelsExhaustedError(60);
-  }
-
-  // 4. Find first available model
   let earliestReset = new Date();
   earliestReset.setHours(24, 0, 0, 0);
 

@@ -5,22 +5,82 @@ import { useTheme } from 'next-themes';
 import { createClient } from '../../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ResumePreviewModal from "../../../components/ResumePreviewModal";
+import { updatePreferredProvider, saveApiKey, deleteApiKey } from './actions';
 
 export default function SettingsClient({ 
   initialProfile, 
   applications,
   resumes: initialResumes,
+  apiKeys: initialApiKeys,
   userEmail 
 }: { 
   initialProfile: any; 
   applications: any[];
   resumes: any[];
+  apiKeys?: any[];
   userEmail: string;
 }) {
   const router = useRouter();
   const supabase = createClient();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+
+  // AI Providers State
+  const [preferredProvider, setPreferredProvider] = useState<string>(initialProfile.preferred_provider || 'google');
+  const [apiKeys, setApiKeys] = useState<any[]>(initialApiKeys || []);
+  const [newKeyProvider, setNewKeyProvider] = useState('google');
+  const [newApiKeyValue, setNewApiKeyValue] = useState('');
+  const [isSavingKey, setIsSavingKey] = useState(false);
+  const [keyMessage, setKeyMessage] = useState({ text: '', type: '' });
+
+  // Handlers for AI Providers
+  const handleUpdatePreferredProvider = async (provider: string) => {
+    setPreferredProvider(provider);
+    await updatePreferredProvider(provider);
+    router.refresh();
+  };
+
+  const handleSaveApiKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newApiKeyValue.trim()) {
+      setKeyMessage({ text: 'API key cannot be empty.', type: 'error' });
+      return;
+    }
+    setIsSavingKey(true);
+    setKeyMessage({ text: '', type: '' });
+    
+    const result = await saveApiKey(newKeyProvider, newApiKeyValue);
+    if (result.error) {
+      setKeyMessage({ text: result.error, type: 'error' });
+      setNewApiKeyValue('');
+    } else {
+      setKeyMessage({ text: 'API key saved successfully!', type: 'success' });
+      setNewApiKeyValue('');
+      // Optimistically update the list
+      const existingKeyIndex = apiKeys.findIndex(k => k.provider === newKeyProvider);
+      const newKeyEntry = { provider: newKeyProvider, created_at: new Date().toISOString() };
+      if (existingKeyIndex >= 0) {
+        const newKeys = [...apiKeys];
+        newKeys[existingKeyIndex] = newKeyEntry;
+        setApiKeys(newKeys);
+      } else {
+        setApiKeys([...apiKeys, newKeyEntry]);
+      }
+      router.refresh();
+    }
+    setIsSavingKey(false);
+  };
+
+  const handleDeleteApiKey = async (provider: string) => {
+    if (!window.confirm(`Are you sure you want to delete your ${provider} API key?`)) return;
+    const result = await deleteApiKey(provider);
+    if (result.error) {
+      alert(`Error: ${result.error}`);
+    } else {
+      setApiKeys(apiKeys.filter(k => k.provider !== provider));
+      router.refresh();
+    }
+  };
 
   // AI Models State
   const [aiModels, setAiModels] = useState<any[]>([]);
@@ -240,6 +300,98 @@ export default function SettingsClient({
           </button>
           {profileMessage && <p className="mt-2 text-sm text-green-600 dark:text-green-400">{profileMessage}</p>}
         </form>
+      </section>
+
+      {/* AI Provider Settings */}
+      <section className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">
+        <h2 className="text-xl font-semibold mb-6 border-b border-gray-200 dark:border-zinc-800 pb-4">AI Providers & BYOK</h2>
+        <p className="text-gray-600 dark:text-zinc-400 mb-6 text-sm">
+          Select your preferred AI provider and securely provide your own API key to bypass global usage limits.
+        </p>
+        
+        {/* Preferred Provider Selection */}
+        <div className="mb-8">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">Preferred Provider</h3>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input 
+                type="radio" 
+                name="preferred_provider" 
+                value="google"
+                checked={preferredProvider === 'google'}
+                onChange={(e) => handleUpdatePreferredProvider(e.target.value)}
+                className="text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700 dark:text-zinc-300">Google Gemini</span>
+            </label>
+            {/* Future providers (e.g. OpenAI) can be added here */}
+          </div>
+        </div>
+
+        {/* Saved Keys */}
+        <div className="mb-8">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">Saved API Keys</h3>
+          {apiKeys.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-zinc-400">No custom API keys saved. Using global fallback.</p>
+          ) : (
+            <div className="space-y-3">
+              {apiKeys.map((key) => (
+                <div key={key.provider} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-md">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900 dark:text-zinc-100 capitalize">{key.provider}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-400">Added: {new Date(key.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <button 
+                    onClick={() => handleDeleteApiKey(key.provider)}
+                    className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Add Key Form */}
+        <div className="bg-gray-50 dark:bg-zinc-950 p-4 rounded-md border border-gray-200 dark:border-zinc-800">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Add or Update API Key</h3>
+          <form onSubmit={handleSaveApiKey} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-1">Provider</label>
+              <select 
+                value={newKeyProvider}
+                onChange={(e) => setNewKeyProvider(e.target.value)}
+                className="rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2 w-full text-sm text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none"
+              >
+                <option value="google">Google Gemini</option>
+                {/* Additional options later */}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-1">API Key</label>
+              <input 
+                type="password"
+                placeholder="Enter your API key..."
+                value={newApiKeyValue}
+                onChange={(e) => setNewApiKeyValue(e.target.value)}
+                className="rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2 w-full text-sm text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isSavingKey || !newApiKeyValue.trim()}
+              className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:opacity-50 transition-colors"
+            >
+              {isSavingKey ? "Verifying & Saving..." : "Save API Key"}
+            </button>
+            {keyMessage.text && (
+              <p className={`text-sm mt-2 ${keyMessage.type === 'error' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                {keyMessage.text}
+              </p>
+            )}
+          </form>
+        </div>
       </section>
 
       {/* AI Model Selection Section */}
