@@ -58,7 +58,7 @@ export async function GET(req: Request) {
 
     // 3. Process each application and send email
     for (const app of applications) {
-      const email = app.users?.email;
+      const email = (app as any).users?.email || (app as any).users?.[0]?.email;
       if (!email) continue;
 
       const action = app.next_action || 'Follow up';

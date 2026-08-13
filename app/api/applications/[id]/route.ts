@@ -79,7 +79,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   } catch (err: any) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation Error', details: err.errors }, { status: 400 });
+      return NextResponse.json({ error: 'Validation Error', details: (err as any).errors }, { status: 400 });
     }
     return NextResponse.json({ error: 'Internal Server Error', details: err.message }, { status: 500 });
   }

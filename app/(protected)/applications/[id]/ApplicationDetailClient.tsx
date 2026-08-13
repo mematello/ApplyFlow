@@ -87,7 +87,7 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
   };
 
   const removeTech = (tech: string) => {
-    setFormData(prev => ({ ...prev, tech_stack: prev.tech_stack.filter(t => t !== tech) }));
+    setFormData(prev => ({ ...prev, tech_stack: prev.tech_stack.filter((t: string) => t !== tech) }));
   };
 
   const handleSave = async (e: React.FormEvent) => {
