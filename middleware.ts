@@ -49,6 +49,7 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = 
     url.pathname === '/' ||
     url.pathname === '/login' || 
+    url.pathname === '/signup' ||
     url.pathname.startsWith('/auth/callback') ||
     url.pathname.startsWith('/api/cron');
 

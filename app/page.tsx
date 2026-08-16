@@ -1,13 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Metadata } from "next";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 export const metadata: Metadata = {
   title: "ApplyFlow — AI-Powered Job Application Tracker",
-  description: "Streamline your job search. Paste a job link, let AI extract the details, assess your fit, and remind you to follow up.",
+  description: "Streamline your job search. Paste the job description, let AI extract the details, assess your fit, and remind you to follow up.",
   openGraph: {
     title: "ApplyFlow — AI-Powered Job Application Tracker",
-    description: "Streamline your job search. Paste a job link, let AI extract the details, assess your fit, and remind you to follow up.",
+    description: "Streamline your job search. Paste the job description, let AI extract the details, assess your fit, and remind you to follow up.",
     images: ["/images/dashboard.png"],
   },
 };
@@ -22,10 +23,11 @@ export default function Home() {
           ApplyFlow
         </div>
         <nav className="flex items-center gap-4">
+          <ThemeToggle />
           <Link href="/login" className="text-sm font-medium hover:text-blue-600 transition-colors">
             Log in
           </Link>
-          <Link href="/login" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+          <Link href="/signup" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
             Get Started
           </Link>
         </nav>
@@ -39,10 +41,10 @@ export default function Home() {
             Track your job applications with AI.
           </h1>
           <p className="text-lg md:text-xl text-gray-600 dark:text-zinc-400 mb-10 max-w-2xl">
-            Streamline your search. Paste a job link, let AI extract the details, 
+            Streamline your search. Paste the job description, let AI extract the details, 
             assess your fit, and remind you to follow up.
           </p>
-          <Link href="/login" className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-lg font-medium shadow-md transition-transform hover:-translate-y-0.5">
+          <Link href="/signup" className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-lg font-medium shadow-md transition-transform hover:-translate-y-0.5">
             Start tracking for free
           </Link>
 
@@ -71,9 +73,9 @@ export default function Home() {
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-bold text-xl mb-6">
                 1
               </div>
-              <h3 className="text-xl font-semibold mb-3">Paste a link</h3>
+              <h3 className="text-xl font-semibold mb-3">Paste the description</h3>
               <p className="text-sm text-gray-600 dark:text-zinc-400 mb-6">
-                Found a job you like? Just paste the URL or raw description text.
+                Found a job you like? Just paste the raw job description text.
               </p>
               <div className="w-full aspect-[4/3] relative rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-sm">
                 <Image 
@@ -123,6 +125,17 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Origin Story */}
+        <section className="w-full max-w-3xl mx-auto py-16 mb-8 text-center">
+          <h2 className="text-3xl font-bold mb-6">Why I built ApplyFlow</h2>
+          <p className="text-lg text-gray-600 dark:text-zinc-400 leading-relaxed mb-6">
+            I built ApplyFlow after tracking 100+ job applications in a messy spreadsheet. It was exhausting to manually copy-paste details, remember when to follow up, and tailor my resume to every role.
+          </p>
+          <p className="text-lg text-gray-600 dark:text-zinc-400 leading-relaxed">
+            ApplyFlow solves this by letting AI do the heavy lifting—extracting job details and assessing your fit instantly, so you can focus on what matters: landing the job.
+          </p>
         </section>
 
         {/* Features Row */}
@@ -175,8 +188,8 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-200 dark:border-zinc-800 py-12 text-center bg-white dark:bg-zinc-950">
         <h2 className="text-2xl font-bold mb-6">Ready to land your next role?</h2>
-        <Link href="/login" className="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-lg font-medium transition-colors mb-10">
-          Get Started
+        <Link href="/signup" className="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-lg font-medium transition-colors mb-10">
+          Create your free account
         </Link>
         <p className="text-sm text-gray-500 dark:text-zinc-500">
           &copy; {new Date().getFullYear()} ApplyFlow. All rights reserved.

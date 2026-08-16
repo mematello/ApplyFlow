@@ -21,6 +21,25 @@ export async function POST() {
     serviceRoleKey
   );
 
+  // 1. Query for resumes to delete their storage files
+  const { data: resumes } = await supabaseAdmin
+    .from('resumes')
+    .select('storage_path')
+    .eq('user_id', user.id);
+
+  if (resumes && resumes.length > 0) {
+    const paths = resumes.map(r => r.storage_path).filter(Boolean);
+    if (paths.length > 0) {
+      // 2. Remove files from storage
+      const { data, error: storageError } = await supabaseAdmin.storage.from('resumes').remove(paths);
+      if (storageError) {
+        // Log the error but proceed with account deletion
+        console.error(`Storage removal failed for user ${user.id}. Orphaned paths:`, paths, "Error:", storageError);
+      }
+    }
+  }
+
+  // 3. Delete the auth user (this will cascade delete the database rows)
   const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
 
   if (deleteError) {
