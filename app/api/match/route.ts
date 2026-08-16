@@ -60,10 +60,10 @@ CRITICAL CONSTRAINT: Never speculate about the candidate's personal circumstance
 Return valid JSON matching the schema strictly. Missing/unknown fit fields should be null.`;
 
     const prompt = `--- JOB DESCRIPTION ---
-\${jobDescription}
+${jobDescription}
 
 --- CANDIDATE RESUME ---
-\${resumeText}`;
+${resumeText}`;
 
     const serviceSupabase = createServiceClient();
     const excludedModels: string[] = [];
