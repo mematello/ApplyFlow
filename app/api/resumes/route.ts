@@ -52,8 +52,8 @@ export async function POST(request: Request) {
         const result = await mammoth.extractRawText({ buffer });
         extractedText = result.value;
       }
-    } catch (err: any) {
-      console.error("Text extraction failed:", err);
+    } catch (err: unknown) {
+      console.error("Text extraction failed:", (err as Error).message);
       // Graceful fallback: we will save it with extractedText = null
     }
 
@@ -99,8 +99,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ data: resumeRecord });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Resume upload error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: (error as Error).message || "Internal server error" }, { status: 500 });
   }
 }

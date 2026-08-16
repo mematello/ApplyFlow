@@ -31,7 +31,7 @@ export async function POST() {
     const paths = resumes.map(r => r.storage_path).filter(Boolean);
     if (paths.length > 0) {
       // 2. Remove files from storage
-      const { data, error: storageError } = await supabaseAdmin.storage.from('resumes').remove(paths);
+      const { error: storageError } = await supabaseAdmin.storage.from('resumes').remove(paths);
       if (storageError) {
         // Log the error but proceed with account deletion
         console.error(`Storage removal failed for user ${user.id}. Orphaned paths:`, paths, "Error:", storageError);

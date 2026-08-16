@@ -54,11 +54,12 @@ export async function GET(req: Request) {
     const profileMap = new Map(profiles?.map((p) => [p.id, p.full_name]) || []);
 
     const successfulSends: string[] = [];
-    const failedSends: any[] = [];
+    const failedSends: Record<string, unknown>[] = [];
 
     // 3. Process each application and send email
     for (const app of applications) {
-      const email = (app as any).users?.email || (app as any).users?.[0]?.email;
+      const users = (app as { users?: { email?: string } | { email?: string }[] }).users;
+      const email = Array.isArray(users) ? users[0]?.email : users?.email;
       if (!email) continue;
 
       const action = app.next_action || 'Follow up';
@@ -117,9 +118,9 @@ export async function GET(req: Request) {
             .update({ next_action_reminder_sent: true })
             .eq('id', app.id);
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error(`Exception sending email for app ${app.id}:`, e);
-        failedSends.push({ id: app.id, error: e.message });
+        failedSends.push({ id: app.id, error: (e as Error).message });
       }
     }
 
@@ -131,8 +132,8 @@ export async function GET(req: Request) {
       details: { successfulSends, failedSends }
     });
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Cron reminder error:', err);
-    return NextResponse.json({ error: 'Internal Server Error', details: err.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error', details: (err as Error).message }, { status: 500 });
   }
 }

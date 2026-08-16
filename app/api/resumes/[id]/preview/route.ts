@@ -33,7 +33,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       isPdf,
       extractedText: resume.extracted_text
     });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: 'Internal Server Error', details: (err as Error).message }, { status: 500 });
   }
 }

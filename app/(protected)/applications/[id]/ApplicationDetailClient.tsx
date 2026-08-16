@@ -9,7 +9,9 @@ import { createPortal } from 'react-dom';
 
 import { ArrowLeft, Trash2 } from 'lucide-react';
 
-export default function ApplicationDetailClient({ initialApplication }: { initialApplication: any }) {
+import { Application } from '../../../../lib/types';
+
+export default function ApplicationDetailClient({ initialApplication }: { initialApplication: Application }) {
   const router = useRouter();
   
   const [formData, setFormData] = useState({
@@ -115,8 +117,8 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
       if (!res.ok) throw new Error(data.error || "Failed to save application");
       
       setToast({ message: "Application updated successfully!", type: 'success' });
-    } catch (err: any) {
-      setToast({ message: err.message, type: 'error' });
+    } catch (err: unknown) {
+      setToast({ message: (err as Error).message, type: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -157,8 +159,8 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
       }
       
       router.push('/dashboard');
-    } catch (err: any) {
-      setToast({ message: err.message, type: 'error' });
+    } catch (err: unknown) {
+      setToast({ message: (err as Error).message, type: 'error' });
       setIsDeleting(false);
     }
   };

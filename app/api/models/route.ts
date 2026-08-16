@@ -3,7 +3,7 @@ import { createClient } from '../../../lib/supabase/server';
 import { createServiceClient } from '../../../lib/supabase/serviceClient';
 import { AI_MODELS } from '../../../lib/ai/models';
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -49,8 +49,8 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({ data: models, preferredModel });
-  } catch (error: any) {
-    console.error("[Models API] Error:", error.message);
+  } catch (error: unknown) {
+    console.error("[Models API] Error:", (error as Error).message);
     return NextResponse.json({ error: 'Failed to fetch models status.' }, { status: 500 });
   }
 }

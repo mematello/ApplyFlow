@@ -40,10 +40,10 @@ export default function OnboardingPage() {
     <div className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50 dark:bg-zinc-950">
       <div className="w-full max-w-sm rounded-lg border p-6 shadow-md bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800">
         <h1 className="mb-2 text-2xl font-bold text-center text-gray-900 dark:text-zinc-100">Welcome to ApplyFlow!</h1>
-        <p className="mb-6 text-sm text-center text-gray-500 dark:text-zinc-400">Let's get your profile set up.</p>
+        <p className="mb-6 text-sm text-center text-gray-500 dark:text-zinc-400">Let&apos;s get your profile set up.</p>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">What's your name?</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">What&apos;s your name?</label>
             <input
               type="text"
               placeholder="e.g. Jane Doe"

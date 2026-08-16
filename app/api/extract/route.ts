@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { JobExtractionSchema } from '../../../lib/schemas/extraction';
 import { createClient } from '../../../lib/supabase/server';
-import { getAvailableModel, AllModelsExhaustedError, parseGeminiError, blockModelInDb, AI_MODELS } from '../../../lib/ai/models';
+import { getAvailableModel, AllModelsExhaustedError, parseGeminiError, blockModelInDb, AI_MODELS, ParsedAiError } from '../../../lib/ai/models';
 import { createServiceClient } from '../../../lib/supabase/serviceClient';
 
 let ai: GoogleGenAI;
@@ -87,7 +87,7 @@ Example Output:
     const excludedModels: string[] = [];
     let attempts = 0;
     const maxAttempts = AI_MODELS.length;
-    let lastError: any = null;
+    let lastError: ParsedAiError | null = null;
 
     while (attempts < maxAttempts) {
       attempts++;
@@ -98,7 +98,7 @@ Example Output:
         // there is no strict guarantee both requests resolve to the identical model under simultaneous fallback.
         // This is an intentional performance tradeoff for parallel execution speed.
         activeModelName = await getAvailableModel(user.id, excludedModels, requestedModel);
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (e instanceof AllModelsExhaustedError) {
           return NextResponse.json({
             error: 'all_models_exhausted',
@@ -139,7 +139,7 @@ Example Output:
           const validated = parseAndValidate(rawJsonText);
           await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
           return NextResponse.json({ data: validated, model_used: activeModelName });
-        } catch (err1: any) {
+        } catch (err1: unknown) {
           const parsed1 = parseGeminiError(err1);
           if (parsed1.isQuotaError || parsed1.isUnavailableError) {
             throw err1; // Trigger model fallback loop
@@ -150,7 +150,7 @@ Example Output:
           await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
           return NextResponse.json({ data: validated, model_used: activeModelName });
         }
-      } catch (modelErr: any) {
+      } catch (modelErr: unknown) {
         const parsedErr = parseGeminiError(modelErr);
         lastError = parsedErr;
 
@@ -192,9 +192,9 @@ Example Output:
       retryAfterSeconds: 60
     }, { status: 429 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: 'An unexpected server error occurred.', details: error.message, partialData: null },
+      { error: 'An unexpected server error occurred.', details: (error as Error).message, partialData: null },
       { status: 500 }
     );
   }

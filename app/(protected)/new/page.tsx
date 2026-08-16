@@ -6,6 +6,8 @@ import { createClient } from "../../../lib/supabase/client";
 import ResumePreviewModal from "../../../components/ResumePreviewModal";
 import { Sparkles } from "lucide-react";
 
+import { AIModel } from "../../../lib/types";
+
 export default function NewApplicationPage() {
   const router = useRouter();
   
@@ -43,7 +45,7 @@ export default function NewApplicationPage() {
   const [resumes, setResumes] = useState<{ id: string, version_label: string, is_current: boolean, extracted_text: string | null }[]>([]);
   const [previewResumeId, setPreviewResumeId] = useState<string | null>(null);
 
-  const [aiModels, setAiModels] = useState<any[]>([]);
+  const [aiModels, setAiModels] = useState<AIModel[]>([]);
   const [preferredModel, setPreferredModel] = useState<string>("");
   const [activeModelName, setActiveModelName] = useState<string>("");
   const [isUpdatingModel, setIsUpdatingModel] = useState(false);
@@ -79,10 +81,10 @@ export default function NewApplicationPage() {
           setPreferredModel(prefModel);
           
           const orderedModels = [
-            ...modelsData.filter((m: any) => m.name === prefModel),
-            ...modelsData.filter((m: any) => m.name !== prefModel)
+            ...modelsData.filter((m: AIModel) => m.name === prefModel),
+            ...modelsData.filter((m: AIModel) => m.name !== prefModel)
           ];
-          const active = orderedModels.find((m: any) => {
+          const active = orderedModels.find((m: AIModel) => {
             const mb = m.blocked_until && new Date(m.blocked_until) > new Date();
             const me = m.request_count >= m.dailyLimit;
             return !mb && !me;
@@ -113,10 +115,10 @@ export default function NewApplicationPage() {
       }
       
       const orderedModels = [
-        ...aiModels.filter((m: any) => m.name === newModel),
-        ...aiModels.filter((m: any) => m.name !== newModel)
+        ...aiModels.filter((m: AIModel) => m.name === newModel),
+        ...aiModels.filter((m: AIModel) => m.name !== newModel)
       ];
-      const active = orderedModels.find((m: any) => {
+      const active = orderedModels.find((m: AIModel) => {
         const mb = m.blocked_until && new Date(m.blocked_until) > new Date();
         const me = m.request_count >= m.dailyLimit;
         return !mb && !me;
@@ -151,7 +153,7 @@ export default function NewApplicationPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ jobDescription, model: selectedModel }),
     }).then(async (res) => {
-      let data: any = {};
+      let data: Record<string, unknown> = {};
       try {
         const text = await res.text();
         data = JSON.parse(text);
@@ -172,7 +174,7 @@ export default function NewApplicationPage() {
             model: selectedModel,
           }),
         }).then(async (res) => {
-          let data: any = {};
+          let data: Record<string, unknown> = {};
           try {
             const text = await res.text();
             data = JSON.parse(text);
@@ -195,38 +197,36 @@ export default function NewApplicationPage() {
         const data = resObj?.data || {};
         const status = resObj?.status || 500;
 
-        let errorMsg = data.message || data.error || `Extraction failed (${status})`;
-        if (typeof errorMsg !== 'string') {
-          errorMsg = JSON.stringify(errorMsg);
-        }
+        const rawErrorMsg = data.message || data.error || `Extraction failed (${status})`;
+        let errorMsg = typeof rawErrorMsg === 'string' ? rawErrorMsg : JSON.stringify(rawErrorMsg);
 
         if (status === 429) {
-          const min = Math.ceil((data.retryAfterSeconds || 60) / 60);
+          const min = Math.ceil(((data.retryAfterSeconds as number) || 60) / 60);
           errorMsg = `All AI models are currently at capacity. Please try again after ${min} minute${min !== 1 ? 's' : ''}.`;
         } else if (status === 503 || data.error === 'service_unavailable') {
-          errorMsg = data.message || "The AI model is currently experiencing high demand. Please try again in a few moments.";
+          errorMsg = (data.message as string) || "The AI model is currently experiencing high demand. Please try again in a few moments.";
         }
         throw new Error(errorMsg);
       }
 
       const extractData = extractResult.value.data;
-      const extractModelUsed = extractData.model_used;
+      const extractModelUsed = extractData.model_used as string;
 
-      const extracted = extractData.data || extractData;
+      const extracted = (extractData.data || extractData) as Record<string, unknown>;
 
       // Handle Match outcome
       let matchSuccess = false;
       let matchErrorType: string | null = null;
-      let matchedData: any = null;
+      let matchedData: Record<string, unknown> | null = null;
       let matchModelUsed: string | null = null;
 
       if (hasResumeToMatch && matchResult && matchResult.status === 'fulfilled' && matchResult.value) {
         const mRes = matchResult.value;
-        matchModelUsed = mRes.data?.model_used || null;
+        matchModelUsed = (mRes.data?.model_used as string) || null;
 
         if (mRes.ok && mRes.data?.data) {
           matchSuccess = true;
-          matchedData = mRes.data.data;
+          matchedData = mRes.data.data as Record<string, unknown>;
         } else {
           matchErrorType = mRes.status === 429 ? '429' : (mRes.status === 503 || mRes.data?.error === 'service_unavailable' ? '503' : 'other');
         }
@@ -243,15 +243,15 @@ export default function NewApplicationPage() {
       setFormData(prev => {
         const updated = {
           ...prev,
-          company_name: extracted.company_name || "",
-          role: extracted.role || "",
-          tech_stack: extracted.tech_stack || [],
-          salary_range: extracted.salary_range || "",
-          location: extracted.location || "",
-          source: extracted.source || "",
-          recruiter_name: extracted.recruiter_name || "",
-          contact_info: extracted.contact_info || "",
-          notes: extracted.notes || "",
+          company_name: (extracted.company_name as string) || "",
+          role: (extracted.role as string) || "",
+          tech_stack: (extracted.tech_stack as string[]) || [],
+          salary_range: (extracted.salary_range as string) || "",
+          location: (extracted.location as string) || "",
+          source: (extracted.source as string) || "",
+          recruiter_name: (extracted.recruiter_name as string) || "",
+          contact_info: (extracted.contact_info as string) || "",
+          notes: (extracted.notes as string) || "",
           raw_jd: jobDescription,
         };
 
@@ -260,9 +260,10 @@ export default function NewApplicationPage() {
           if (matchedData.culture_fit != null) { updated.culture_fit = String(matchedData.culture_fit); newSuggested.add("culture_fit"); }
           if (matchedData.priority != null) { updated.priority = String(matchedData.priority); newSuggested.add("priority"); }
 
-          let combinedNotes = extracted.notes || "";
+          let combinedNotes = (extracted.notes as string) || "";
           if (matchedData.notes) {
-            combinedNotes += combinedNotes ? `\n\n${matchedData.notes}` : matchedData.notes;
+            const mNotes = matchedData.notes as string;
+            combinedNotes += combinedNotes ? `\n\n${mNotes}` : mNotes;
           }
           if (combinedNotes !== prev.notes) {
             updated.notes = combinedNotes;
@@ -296,8 +297,8 @@ export default function NewApplicationPage() {
         setToast({ message: "Extraction complete!", type: 'success' });
       }
 
-    } catch (err: any) {
-      setToast({ message: err.message, type: 'error' });
+    } catch (err: unknown) {
+      setToast({ message: (err as Error).message, type: 'error' });
       setIsExtracting(false);
       setIsMatching(false);
     }
@@ -330,8 +331,8 @@ export default function NewApplicationPage() {
       
       setToast({ message: "Application saved successfully!", type: 'success' });
       setTimeout(() => router.push('/dashboard'), 1500);
-    } catch (err: any) {
-      setToast({ message: err.message, type: 'error' });
+    } catch (err: unknown) {
+      setToast({ message: (err as Error).message, type: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -419,7 +420,7 @@ export default function NewApplicationPage() {
                       {aiModels.length === 0 ? (
                         <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
                       ) : (
-                        aiModels.map((m: any) => {
+                        aiModels.map((m: AIModel) => {
                           const isBlocked = m.blocked_until && new Date(m.blocked_until) > new Date();
                           const isExhausted = m.request_count >= m.dailyLimit;
                           const unavailable = isBlocked || isExhausted;

@@ -26,10 +26,12 @@ export interface ParsedAiError {
   retryAfterSeconds: number | null;
 }
 
-export function parseGeminiError(e: any): ParsedAiError {
-  const rawMessage = e?.message || String(e || '');
-  let statusCode: number | null = typeof e?.status === 'number' ? e.status : (typeof e?.code === 'number' ? e.code : null);
-  let statusText: string | null = typeof e?.status === 'string' ? e.status : null;
+export function parseGeminiError(e: unknown): ParsedAiError {
+  const rawMessage = e instanceof Error ? e.message : String(e || '');
+  const errObj = (e && typeof e === 'object') ? (e as Record<string, unknown>) : {};
+  
+  let statusCode: number | null = typeof errObj.status === 'number' ? errObj.status : (typeof errObj.code === 'number' ? errObj.code : null);
+  let statusText: string | null = typeof errObj.status === 'string' ? errObj.status : null;
   let message = rawMessage;
 
   // Safely attempt to parse stringified JSON embedded in error message
@@ -38,10 +40,10 @@ export function parseGeminiError(e: any): ParsedAiError {
     const lastBrace = rawMessage.lastIndexOf('}');
     if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
       const parsed = JSON.parse(rawMessage.slice(firstBrace, lastBrace + 1));
-      const errObj = parsed.error || parsed;
-      if (errObj.code) statusCode = Number(errObj.code);
-      if (errObj.status) statusText = String(errObj.status);
-      if (errObj.message) message = String(errObj.message);
+      const innerErr = parsed.error || parsed;
+      if (innerErr.code) statusCode = Number(innerErr.code);
+      if (innerErr.status) statusText = String(innerErr.status);
+      if (innerErr.message) message = String(innerErr.message);
     }
   } catch {
     // Non-JSON message; fall back to string matching

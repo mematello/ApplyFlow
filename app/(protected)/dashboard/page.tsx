@@ -54,7 +54,7 @@ export default async function DashboardPage() {
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
           <h2 className="text-2xl font-bold mb-4">No applications yet</h2>
           <p className="text-gray-600 dark:text-zinc-400 mb-8 max-w-md">
-            You haven't tracked any job applications yet. Paste your first job description to get started!
+            You haven&apos;t tracked any job applications yet. Paste your first job description to get started!
           </p>
           <Link href="/new" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-sm">
             Track New Application
