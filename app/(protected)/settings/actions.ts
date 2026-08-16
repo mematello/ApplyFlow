@@ -43,15 +43,15 @@ export async function saveApiKey(provider: string, rawKey: string) {
   let providerInstance;
   try {
     providerInstance = getProvider(provider, cleanKey);
-  } catch (err) {
+  } catch (_err: unknown) {
     return { error: 'Unsupported provider.' };
   }
 
   let isValid = false;
   try {
     isValid = await providerInstance.validateKey(cleanKey);
-  } catch (err: any) {
-    return { error: err.message };
+  } catch (err: unknown) {
+    return { error: (err as Error).message };
   }
 
   if (!isValid) {

@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import ResumePreviewModal from "../../../components/ResumePreviewModal";
 import { updatePreferredProvider, saveApiKey, deleteApiKey } from './actions';
 
+import { Application, Resume, Profile, AIModel, ApiKey } from '../../../lib/types';
+
 export default function SettingsClient({ 
   initialProfile, 
   applications,
@@ -14,10 +16,10 @@ export default function SettingsClient({
   apiKeys: initialApiKeys,
   userEmail 
 }: { 
-  initialProfile: any; 
-  applications: any[];
-  resumes: any[];
-  apiKeys?: any[];
+  initialProfile: Profile; 
+  applications: Application[];
+  resumes: Resume[];
+  apiKeys?: ApiKey[];
   userEmail: string;
 }) {
   const router = useRouter();
@@ -27,7 +29,7 @@ export default function SettingsClient({
 
   // AI Providers State
   const [preferredProvider, setPreferredProvider] = useState<string>(initialProfile.preferred_provider || 'google');
-  const [apiKeys, setApiKeys] = useState<any[]>(initialApiKeys || []);
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>(initialApiKeys || []);
   const [newKeyProvider, setNewKeyProvider] = useState('google');
   const [newApiKeyValue, setNewApiKeyValue] = useState('');
   const [isSavingKey, setIsSavingKey] = useState(false);
@@ -83,7 +85,7 @@ export default function SettingsClient({
   };
 
   // AI Models State
-  const [aiModels, setAiModels] = useState<any[]>([]);
+  const [aiModels, setAiModels] = useState<AIModel[]>([]);
   const [preferredModel, setPreferredModel] = useState<string>("");
   const [isLoadingModels, setIsLoadingModels] = useState(true);
 
@@ -169,7 +171,7 @@ export default function SettingsClient({
       headers.join(','),
       ...applications.map(app => 
         headers.map(header => {
-          let val = app[header];
+          let val = app[header as keyof Application];
           if (val === null || val === undefined) val = "";
           // Escape quotes and wrap in quotes for CSV
           return `"${String(val).replace(/"/g, '""')}"`;
@@ -216,8 +218,8 @@ export default function SettingsClient({
       setResumeFile(null);
       setVersionLabel("");
       setIsCurrentResume(false);
-    } catch (err: any) {
-      setUploadError(err.message);
+    } catch (err: unknown) {
+      setUploadError((err as Error).message);
     } finally {
       setIsUploading(false);
     }
@@ -234,8 +236,8 @@ export default function SettingsClient({
       }
       setResumes(prev => prev.filter(r => r.id !== id));
       router.refresh();
-    } catch (err: any) {
-      alert("Failed to delete resume: " + err.message);
+    } catch (err: unknown) {
+      alert("Failed to delete resume: " + (err as Error).message);
     }
   }
 
@@ -252,8 +254,8 @@ export default function SettingsClient({
       }
       setResumes(prev => prev.map(r => ({ ...r, is_current: r.id === id })));
       router.refresh();
-    } catch (err: any) {
-      alert("Failed to update current resume: " + err.message);
+    } catch (err: unknown) {
+      alert("Failed to update current resume: " + (err as Error).message);
     }
   }
 
@@ -271,8 +273,8 @@ export default function SettingsClient({
       
       await supabase.auth.signOut();
       router.push('/login?message=Your+account+has+been+deleted.');
-    } catch (err: any) {
-      setDeleteError(err.message);
+    } catch (err: unknown) {
+      setDeleteError((err as Error).message);
       setIsDeleting(false);
     }
   };
@@ -410,7 +412,7 @@ export default function SettingsClient({
               const isPreferred = model.name === preferredModel;
               
               let statusText = `${model.request_count} / ${model.dailyLimit} used today`;
-              if (isBlocked) {
+              if (isBlocked && model.blocked_until) {
                 statusText = `Blocked until ${new Date(model.blocked_until).toLocaleTimeString()}`;
               } else if (isExhausted) {
                 statusText = `Daily limit reached`;

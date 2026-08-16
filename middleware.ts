@@ -38,13 +38,18 @@ export async function middleware(request: NextRequest) {
 
   // Handle root / redirect based on server-verified user authentication
   if (url.pathname === '/') {
-    url.pathname = user ? '/dashboard' : '/login'
-    return NextResponse.redirect(url)
+    if (user) {
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+    // If unauthenticated, allow the request to proceed to the landing page at '/'
   }
 
   // Define public routes that do not require authentication
   const isPublicRoute = 
+    url.pathname === '/' ||
     url.pathname === '/login' || 
+    url.pathname === '/signup' ||
     url.pathname.startsWith('/auth/callback') ||
     url.pathname.startsWith('/api/cron');
 
@@ -70,6 +75,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm)$).*)',
   ],
 }

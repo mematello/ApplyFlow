@@ -54,7 +54,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: fetchError.message }, { status: 400 });
     }
 
-    const payloadToUpdate: any = {
+    const payloadToUpdate: Record<string, unknown> = {
       ...parsedData,
       updated_at: new Date().toISOString(),
     };
@@ -77,11 +77,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     return NextResponse.json({ data });
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation Error', details: err.errors }, { status: 400 });
+      const zodErr = err as unknown as { errors: unknown };
+      return NextResponse.json({ error: 'Validation Error', details: zodErr.errors }, { status: 400 });
     }
-    return NextResponse.json({ error: 'Internal Server Error', details: err.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error', details: (err as Error).message }, { status: 500 });
   }
 }
 
@@ -107,7 +108,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     }
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: 'Internal Server Error', details: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: 'Internal Server Error', details: (err as Error).message }, { status: 500 });
   }
 }

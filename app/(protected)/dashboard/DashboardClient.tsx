@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronUp, ChevronDown, Search } from 'lucide-react';
 
-type Application = any; // Will use any for now to flexibly map from db schema
+import { Application } from '../../../lib/types';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-700 border-gray-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700",
@@ -81,19 +81,19 @@ export default function DashboardClient({ initialApplications }: { initialApplic
   
   // Derived state: Sort
   const sortedApps = [...filteredApps].sort((a, b) => {
-    let valA = a[sortField];
-    let valB = b[sortField];
+    let valA = a[sortField as keyof Application];
+    let valB = b[sortField as keyof Application];
 
     if (sortField === 'priority') {
-      const pmap: any = { 'high': 3, 'medium': 2, 'low': 1, null: 0, '': 0 };
-      valA = pmap[valA] || 0;
-      valB = pmap[valB] || 0;
+      const pmap: Record<string, number> = { 'high': 3, 'medium': 2, 'low': 1, 'null': 0, '': 0 };
+      valA = pmap[String(valA)] || 0;
+      valB = pmap[String(valB)] || 0;
     } else if (sortField === 'company_name' || sortField === 'role') {
-      valA = (valA || "").toLowerCase();
-      valB = (valB || "").toLowerCase();
+      valA = String(valA || "").toLowerCase();
+      valB = String(valB || "").toLowerCase();
     } else {
-      valA = valA || "";
-      valB = valB || "";
+      valA = String(valA || "");
+      valB = String(valB || "");
     }
 
     if (valA < valB) return sortAsc ? -1 : 1;

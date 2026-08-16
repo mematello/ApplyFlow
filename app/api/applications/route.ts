@@ -29,8 +29,6 @@ export async function POST(req: Request) {
     // Validate payload against Zod schema
     const parsedData = ApplicationInsertSchema.parse(body);
 
-    // (We will use a Postgres trigger to handle syncing auth.users to public.users instead)
-
     // Attach the authenticated user's ID
     const payload = {
       ...parsedData,
@@ -50,10 +48,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ data });
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Validation Error', details: err.errors }, { status: 400 });
+      const zodErr = err as unknown as { errors: unknown };
+      return NextResponse.json({ error: 'Validation Error', details: zodErr.errors }, { status: 400 });
     }
-    return NextResponse.json({ error: 'Internal Server Error', details: err.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error', details: (err as Error).message }, { status: 500 });
   }
 }

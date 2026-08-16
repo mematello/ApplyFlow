@@ -24,8 +24,8 @@ export default function ResumePreviewModal({ resumeId, onClose }: ResumePreviewM
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Failed to load preview");
         setData(json);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError((err as Error).message);
       } finally {
         setLoading(false);
       }

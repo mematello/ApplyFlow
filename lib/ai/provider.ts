@@ -7,7 +7,7 @@ export interface AiProvider {
    */
   generateObject(
     prompt: string, 
-    schema: any, 
+    schema: Record<string, unknown>, 
     modelName: string, 
     content: string
   ): Promise<string>;
@@ -26,7 +26,7 @@ export class GoogleGeminiProvider implements AiProvider {
     this.ai = new GoogleGenAI({ apiKey });
   }
 
-  async generateObject(prompt: string, schema: any, modelName: string, content: string): Promise<string> {
+  async generateObject(prompt: string, schema: Record<string, unknown>, modelName: string, content: string): Promise<string> {
     const response = await this.ai.models.generateContent({
       model: modelName,
       contents: content,
@@ -50,7 +50,7 @@ export class GoogleGeminiProvider implements AiProvider {
       const tempAi = new GoogleGenAI({ apiKey });
       await tempAi.models.get({ model: 'gemini-3.5-flash' });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const parsed = parseGeminiError(error);
       
       if (parsed.isUnavailableError || parsed.isQuotaError) {

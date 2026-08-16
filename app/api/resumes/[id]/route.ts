@@ -25,8 +25,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ data });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Internal error" }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error as Error).message || "Internal error" }, { status: 500 });
   }
 }
 
@@ -61,7 +61,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     
     if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Internal error" }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: (error as Error).message || "Internal error" }, { status: 500 });
   }
 }
