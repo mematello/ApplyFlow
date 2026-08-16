@@ -5,6 +5,7 @@ import { useTheme } from 'next-themes';
 import { createClient } from '../../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import ResumePreviewModal from "../../../components/ResumePreviewModal";
+import ResumeUploader from "../../../components/ResumeUploader";
 import { updatePreferredProvider, saveApiKey, deleteApiKey } from './actions';
 
 import { Application, Resume, Profile, AIModel, ApiKey } from '../../../lib/types';
@@ -115,11 +116,6 @@ export default function SettingsClient({
 
   // Resumes state
   const [resumes, setResumes] = useState(initialResumes);
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [versionLabel, setVersionLabel] = useState("");
-  const [isCurrentResume, setIsCurrentResume] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
   const [previewResumeId, setPreviewResumeId] = useState<string | null>(null);
 
   // Deletion Form
@@ -190,38 +186,12 @@ export default function SettingsClient({
     document.body.removeChild(link);
   };
 
-  const handleUploadResume = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!resumeFile || !versionLabel) return;
-    setIsUploading(true);
-    setUploadError("");
-
-    const formData = new FormData();
-    formData.append('file', resumeFile);
-    formData.append('version_label', versionLabel);
-    formData.append('is_current', String(isCurrentResume));
-
-    try {
-      const res = await fetch('/api/resumes', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to upload resume");
-
-      router.refresh();
-      if (isCurrentResume) {
-         setResumes(prev => prev.map(r => ({ ...r, is_current: false })).concat(data.data).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
-      } else {
-         setResumes(prev => [data.data, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
-      }
-      setResumeFile(null);
-      setVersionLabel("");
-      setIsCurrentResume(false);
-    } catch (err: unknown) {
-      setUploadError((err as Error).message);
-    } finally {
-      setIsUploading(false);
+  const handleUploadSuccess = (newResume: Resume, wasSetAsCurrent: boolean) => {
+    router.refresh();
+    if (wasSetAsCurrent) {
+       setResumes(prev => prev.map(r => ({ ...r, is_current: false })).concat(newResume).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+    } else {
+       setResumes(prev => [newResume, ...prev].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     }
   };
 
@@ -498,54 +468,9 @@ export default function SettingsClient({
       <section className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">
         <h2 className="text-xl font-semibold mb-6 border-b border-gray-200 dark:border-zinc-800 pb-4">Resumes</h2>
         
-        {/* Upload Form */}
-        <form onSubmit={handleUploadResume} className="w-full mb-8 bg-gray-50 dark:bg-zinc-950 p-4 rounded-md border border-gray-200 dark:border-zinc-800">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Upload New Resume</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">File (PDF or DOCX, max 5MB)</label>
-              <input 
-                type="file" 
-                accept=".pdf,.docx"
-                onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
-                required
-                className="w-full text-sm text-gray-500 dark:text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400 dark:hover:file:bg-blue-900/50"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Version Label</label>
-              <input
-                type="text"
-                placeholder="e.g. Frontend Dev 2026"
-                value={versionLabel}
-                onChange={(e) => setVersionLabel(e.target.value)}
-                required
-                className="rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2 w-full text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 mb-4">
-            <input 
-              type="checkbox" 
-              id="is_current_resume"
-              checked={isCurrentResume}
-              onChange={(e) => setIsCurrentResume(e.target.checked)}
-              className="w-4 h-4 rounded bg-white dark:bg-zinc-900 border-gray-300 dark:border-zinc-700 text-blue-600 focus:ring-blue-500"
-            />
-            <label htmlFor="is_current_resume" className="text-sm text-gray-700 dark:text-zinc-300">Set as current default</label>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isUploading || !resumeFile || !versionLabel}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:opacity-50 transition-colors"
-          >
-            {isUploading ? "Uploading..." : "Upload Resume"}
-          </button>
-          {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
-        </form>
+        <div className="mb-8">
+          <ResumeUploader onSuccess={handleUploadSuccess} />
+        </div>
 
         {/* List of Resumes */}
         <div className="space-y-3">
