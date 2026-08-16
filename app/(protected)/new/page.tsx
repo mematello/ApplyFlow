@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { createClient } from "../../../lib/supabase/client";
 import ResumePreviewModal from "../../../components/ResumePreviewModal";
 import { Sparkles } from "lucide-react";
+import Link from "next/link";
+import { User } from "@supabase/supabase-js";
+import { createApplication } from "../../../lib/data-source";
 
 import { AIModel } from "../../../lib/types";
 
@@ -45,6 +48,9 @@ export default function NewApplicationPage() {
   const [resumes, setResumes] = useState<{ id: string, version_label: string, is_current: boolean, extracted_text: string | null }[]>([]);
   const [previewResumeId, setPreviewResumeId] = useState<string | null>(null);
 
+  const [user, setUser] = useState<User | null>(null);
+  const [isLocal, setIsLocal] = useState(false);
+
   const [aiModels, setAiModels] = useState<AIModel[]>([]);
   const [preferredModel, setPreferredModel] = useState<string>("");
   const [activeModelName, setActiveModelName] = useState<string>("");
@@ -55,7 +61,12 @@ export default function NewApplicationPage() {
     const fetchResumes = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setIsLocal(true);
+        return;
+      }
+      setUser(user);
+      
       const { data } = await supabase
         .from('resumes')
         .select('id, version_label, is_current, extracted_text')
@@ -318,16 +329,7 @@ export default function NewApplicationPage() {
         raw_jd: jobDescription, // Ensure raw_jd is included
       };
 
-      const res = await fetch("/api/applications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to save application");
-      }
+      await createApplication(user, payload);
       
       setToast({ message: "Application saved successfully!", type: 'success' });
       setTimeout(() => router.push('/dashboard'), 1500);
@@ -380,6 +382,13 @@ export default function NewApplicationPage() {
     <div className="max-w-4xl mx-auto p-8 text-gray-900 dark:text-zinc-100">
       <h1 className="text-3xl font-bold mb-8">New Job Application</h1>
 
+      {isLocal && (
+        <div className="mb-6 p-4 bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 rounded-lg text-sm flex items-center justify-between">
+          <span><strong>You are in local mode.</strong> AI features are disabled. Data is saved to this device only.</span>
+          <Link href="/signup" className="underline font-semibold hover:text-amber-900 dark:hover:text-amber-300 ml-4 whitespace-nowrap">Sign up to unlock AI</Link>
+        </div>
+      )}
+
       {toast && (
         <div className={`mb-6 p-4 rounded-md text-sm font-medium ${toast.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
           {toast.message}
@@ -387,6 +396,7 @@ export default function NewApplicationPage() {
       )}
 
       {/* Extraction Section */}
+      {!isLocal && (
       <div className="mb-10 bg-white dark:bg-zinc-900 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">
         <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">Paste Job Description</label>
         <textarea
@@ -481,6 +491,7 @@ export default function NewApplicationPage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Manual & Extracted Form */}
       <form onSubmit={handleSave} className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">

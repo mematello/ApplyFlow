@@ -3,65 +3,42 @@ import { redirect } from 'next/navigation';
 import DashboardClient from './DashboardClient';
 import Link from 'next/link';
 import LogoutButton from '../../../components/LogoutButton';
+import { ThemeToggle } from '../../../components/ThemeToggle';
 import { Settings } from 'lucide-react';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/login');
-  }
+  let firstName = 'Guest';
+  let applications = [];
 
-  // Check for profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name')
-    .eq('id', user.id)
-    .single();
+  if (user) {
+    // Check for profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
 
-  if (!profile) {
-    redirect('/onboarding');
-  }
+    if (!profile) {
+      redirect('/onboarding');
+    }
 
-  const firstName = profile.full_name.split(' ')[0];
+    firstName = profile.full_name.split(' ')[0];
 
-  // Fetch applications for the authenticated user, ordered by date_applied descending
-  const { data: applications, error } = await supabase
-    .from('applications')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('date_applied', { ascending: false });
+    // Fetch applications for the authenticated user, ordered by date_applied descending
+    const { data: fetchedApps, error } = await supabase
+      .from('applications')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date_applied', { ascending: false });
 
-  if (error) {
-    console.error("Error fetching applications:", error);
-    return <div className="p-8 text-red-500 dark:text-red-400">Failed to load applications.</div>;
-  }
-
-  // Handle empty state gracefully by prompting the user to track their first application
-  if (!applications || applications.length === 0) {
-    return (
-      <div className="max-w-6xl mx-auto p-4 md:p-8 text-gray-900 dark:text-zinc-100">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Welcome, {firstName}!</h1>
-          <div className="flex items-center gap-4">
-            <Link href="/settings" className="p-2 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors" title="Settings">
-              <Settings className="w-5 h-5" />
-            </Link>
-            <LogoutButton />
-          </div>
-        </div>
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-          <h2 className="text-2xl font-bold mb-4">No applications yet</h2>
-          <p className="text-gray-600 dark:text-zinc-400 mb-8 max-w-md">
-            You haven&apos;t tracked any job applications yet. Paste your first job description to get started!
-          </p>
-          <Link href="/new" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-sm">
-            Track New Application
-          </Link>
-        </div>
-      </div>
-    );
+    if (error) {
+      console.error("Error fetching applications:", error);
+      return <div className="p-8 text-red-500 dark:text-red-400">Failed to load applications.</div>;
+    }
+    applications = fetchedApps || [];
   }
 
   return (
@@ -69,10 +46,19 @@ export default async function DashboardPage() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Welcome, {firstName}!</h1>
         <div className="flex items-center gap-4">
-          <Link href="/settings" className="p-2 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors" title="Settings">
-            <Settings className="w-5 h-5" />
-          </Link>
-          <LogoutButton />
+          <ThemeToggle />
+          {user && (
+            <Link href="/settings" className="p-2 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors" title="Settings">
+              <Settings className="w-5 h-5" />
+            </Link>
+          )}
+          {user ? (
+            <LogoutButton />
+          ) : (
+            <Link href="/login" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-900 dark:text-zinc-100 rounded-md font-medium transition-colors">
+              Log in
+            </Link>
+          )}
           <Link href="/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-sm">
             + New Application
           </Link>
@@ -80,7 +66,7 @@ export default async function DashboardPage() {
       </div>
       
       {/* Pass the loaded data down to the interactive client component */}
-      <DashboardClient initialApplications={applications} />
+      <DashboardClient initialApplications={applications} isLocal={!user} />
     </div>
   );
 }

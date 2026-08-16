@@ -27,8 +27,8 @@ export default function Home() {
           <Link href="/login" className="text-sm font-medium hover:text-blue-600 transition-colors">
             Log in
           </Link>
-          <Link href="/signup" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
-            Get Started
+          <Link href="/dashboard" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+            Try without signup
           </Link>
         </nav>
       </header>

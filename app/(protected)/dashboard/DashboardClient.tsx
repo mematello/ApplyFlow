@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronUp, ChevronDown, Search } from 'lucide-react';
+import Link from 'next/link';
 
 import { Application } from '../../../lib/types';
+import { fetchApplications, updateApplicationStatus } from '../../../lib/data-source';
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-700 border-gray-300 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700",
@@ -16,13 +18,28 @@ const STATUS_COLORS: Record<string, string> = {
   withdrawn: "bg-gray-100 text-gray-500 border-gray-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700",
 };
 
-export default function DashboardClient({ initialApplications }: { initialApplications: Application[] }) {
+export default function DashboardClient({ initialApplications, isLocal }: { initialApplications: Application[], isLocal?: boolean }) {
   const router = useRouter();
   const [applications, setApplications] = useState<Application[]>(initialApplications);
   const [filter, setFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortField, setSortField] = useState<string>("date_applied");
   const [sortAsc, setSortAsc] = useState<boolean>(false); // false = descending by default
+  const [isLoading, setIsLoading] = useState<boolean>(isLocal === true);
+
+  useEffect(() => {
+    if (isLocal) {
+      fetchApplications(null)
+        .then(data => {
+          setApplications(data);
+          setIsLoading(false);
+        })
+        .catch(err => {
+          console.error('Failed to load local applications', err);
+          setIsLoading(false);
+        });
+    }
+  }, [isLocal]);
 
   const handleStatusChange = async (id: string, newStatus: string, e: React.ChangeEvent) => {
     e.stopPropagation(); // prevent row click navigation when modifying status
@@ -37,14 +54,10 @@ export default function DashboardClient({ initialApplications }: { initialApplic
 
     // 2. Background API Call
     try {
-      const res = await fetch(`/api/applications/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!res.ok) throw new Error("Failed to update status");
-      
+      // In local mode, user is null. We simulate passing user or null to the abstraction.
+      // Since this is a client component, we pass null if isLocal is true, otherwise fake a user object just to let data-source know we are authenticated (since data-source.ts just checks if user exists).
+      const dummyUser = isLocal ? null : { id: 'auth' } as any; 
+      await updateApplicationStatus(dummyUser, id, newStatus);
     } catch (err) {
       console.error(err);
       // 3. Rollback on failure!
@@ -65,6 +78,29 @@ export default function DashboardClient({ initialApplications }: { initialApplic
       setSortAsc(false); // default desc for new fields
     }
   };
+
+  if (isLoading) {
+    return <div className="p-8 text-center text-gray-500">Loading your applications...</div>;
+  }
+
+  if (applications.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        {isLocal && (
+          <div className="w-full max-w-2xl mb-8 p-4 bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 rounded-lg text-sm text-left">
+            <strong>You are in local mode.</strong> Data is saved to this device only and will be lost if you clear your browser data. <Link href="/signup" className="underline font-semibold hover:text-amber-900 dark:hover:text-amber-300">Sign up to cloud sync</Link>.
+          </div>
+        )}
+        <h2 className="text-2xl font-bold mb-4">No applications yet</h2>
+        <p className="text-gray-600 dark:text-zinc-400 mb-8 max-w-md">
+          You haven&apos;t tracked any job applications yet. Paste your first job description to get started!
+        </p>
+        <Link href="/new" className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-sm">
+          Track New Application
+        </Link>
+      </div>
+    );
+  }
 
   // Derived state: Filter (Status + Search)
   let filteredApps = applications;
@@ -112,6 +148,13 @@ export default function DashboardClient({ initialApplications }: { initialApplic
 
   return (
     <div>
+      {isLocal && (
+        <div className="mb-6 p-4 bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 rounded-lg text-sm flex items-center justify-between">
+          <span><strong>You are in local mode.</strong> Data is saved to this device only and will be lost if you clear your browser data.</span>
+          <Link href="/signup" className="underline font-semibold hover:text-amber-900 dark:hover:text-amber-300 ml-4 whitespace-nowrap">Sign up to cloud sync</Link>
+        </div>
+      )}
+
       {/* Search & Filter */}
       <div className="flex flex-col md:flex-row gap-4 mb-6 items-start md:items-center justify-between">
         <div className="relative w-full md:w-72">
