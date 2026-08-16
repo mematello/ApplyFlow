@@ -306,27 +306,22 @@ export default function SettingsClient({
 
       {/* AI Provider Settings */}
       <section className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">
-        <h2 className="text-xl font-semibold mb-6 border-b border-gray-200 dark:border-zinc-800 pb-4">AI Providers & BYOK</h2>
+        <h2 className="text-xl font-semibold mb-6 border-b border-gray-200 dark:border-zinc-800 pb-4">Google Gemini API Key (BYOK)</h2>
         <p className="text-gray-600 dark:text-zinc-400 mb-6 text-sm">
-          Select your preferred AI provider and securely provide your own API key to bypass global usage limits.
+          Securely provide your own Google Gemini API key to bypass global usage limits.
         </p>
         
         {/* Preferred Provider Selection */}
         <div className="mb-8">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">Preferred Provider</h3>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input 
-                type="radio" 
-                name="preferred_provider" 
-                value="google"
-                checked={preferredProvider === 'google'}
-                onChange={(e) => handleUpdatePreferredProvider(e.target.value)}
-                className="text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700 dark:text-zinc-300">Google Gemini</span>
-            </label>
-            {/* Future providers (e.g. OpenAI) can be added here */}
+          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-3">Active Provider</h3>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm font-medium text-blue-700 dark:text-blue-300">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Google Gemini
+            </span>
+            <span className="text-xs text-gray-500 dark:text-zinc-400">Default for extraction & matching</span>
           </div>
         </div>
 
@@ -357,18 +352,18 @@ export default function SettingsClient({
 
         {/* Add Key Form */}
         <div className="bg-gray-50 dark:bg-zinc-950 p-4 rounded-md border border-gray-200 dark:border-zinc-800">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Add or Update API Key</h3>
+          <h3 className="text-sm font-medium text-gray-900 dark:text-zinc-100 mb-4">Update API Key</h3>
           <form onSubmit={handleSaveApiKey} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-1">Provider</label>
-              <select 
-                value={newKeyProvider}
-                onChange={(e) => setNewKeyProvider(e.target.value)}
-                className="rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2 w-full text-sm text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="google">Google Gemini</option>
-                {/* Additional options later */}
-              </select>
+              <label className="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-2">Provider</label>
+              <div className="flex items-center">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-sm font-medium text-blue-700 dark:text-blue-300">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Google Gemini
+                </span>
+              </div>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-zinc-300 mb-1">API Key</label>
