@@ -1,5 +1,5 @@
 export const DB_NAME = 'applyflow_local';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 export const STORE_APPLICATIONS = 'applications';
 
 export function getDb(): Promise<IDBDatabase> {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { createClient } from '../../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -128,23 +128,31 @@ export default function SettingsClient({
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
+  const isSavingProfileRef = useRef(false);
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSavingProfileRef.current) return;
+    isSavingProfileRef.current = true;
     setIsSavingProfile(true);
     setProfileMessage("");
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ full_name: fullName.trim() })
-      .eq('id', initialProfile.id);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: fullName.trim() })
+        .eq('id', initialProfile.id);
 
-    if (error) {
-      setProfileMessage(`Error: ${error.message}`);
-    } else {
-      setProfileMessage("Profile updated successfully!");
-      router.refresh();
+      if (error) {
+        setProfileMessage(`Error: ${error.message}`);
+      } else {
+        setProfileMessage("Profile updated successfully!");
+        router.refresh();
+      }
+    } finally {
+      isSavingProfileRef.current = false;
+      setIsSavingProfile(false);
     }
-    setIsSavingProfile(false);
   };
 
   const handleModelChange = async (modelName: string) => {

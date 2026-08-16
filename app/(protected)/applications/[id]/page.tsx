@@ -9,7 +9,8 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login');
+    // Unauthenticated, render the client component with isLocal=true
+    return <ApplicationDetailClient initialApplication={null} isLocal={true} appId={id} />;
   }
 
   // Fetch the application, strictly scoping to the current user
@@ -26,5 +27,5 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
     redirect('/dashboard');
   }
 
-  return <ApplicationDetailClient initialApplication={application} />;
+  return <ApplicationDetailClient initialApplication={application} isLocal={false} appId={id} />;
 }

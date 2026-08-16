@@ -8,39 +8,49 @@ import ResumePreviewModal from '../../../../components/ResumePreviewModal';
 import { createPortal } from 'react-dom';
 
 import { ArrowLeft, Trash2 } from 'lucide-react';
+import { useRef } from 'react';
 
 import { Application } from '../../../../lib/types';
+import { updateApplication, deleteApplication, fetchApplicationById } from '../../../../lib/data-source';
+import { normalizeTitleCase } from '../../../../lib/utils/format';
 
-export default function ApplicationDetailClient({ initialApplication }: { initialApplication: Application }) {
+export default function ApplicationDetailClient({ initialApplication, isLocal, appId }: { initialApplication: Application | null, isLocal?: boolean, appId?: string }) {
   const router = useRouter();
   
+  const [applicationData, setApplicationData] = useState<Application | null>(initialApplication);
+  const [isLoading, setIsLoading] = useState(isLocal && !initialApplication);
+  
   const [formData, setFormData] = useState({
-    company_name: initialApplication.company_name || "",
-    role: initialApplication.role || "",
-    tech_stack: initialApplication.tech_stack || [],
-    salary_range: initialApplication.salary_range || "",
-    location: initialApplication.location || "",
-    source: initialApplication.source || "",
-    job_link: initialApplication.job_link || "",
-    recruiter_name: initialApplication.recruiter_name || "",
-    contact_info: initialApplication.contact_info || "",
+    company_name: initialApplication?.company_name || "",
+    role: initialApplication?.role || "",
+    tech_stack: initialApplication?.tech_stack || [],
+    salary_range: initialApplication?.salary_range || "",
+    currency: initialApplication?.currency || "PHP",
+    location: initialApplication?.location || "",
+    source: initialApplication?.source || "",
+    job_link: initialApplication?.job_link || "",
+    recruiter_name: initialApplication?.recruiter_name || "",
+    contact_info: initialApplication?.contact_info || "",
     
-    status: initialApplication.status || "draft",
-    priority: initialApplication.priority || "",
-    date_applied: initialApplication.date_applied || "",
-    next_action: initialApplication.next_action || "",
-    next_action_date: initialApplication.next_action_date || "",
-    resume_version: initialApplication.resume_version || "",
-    cover_letter_sent: initialApplication.cover_letter_sent || false,
+    status: initialApplication?.status || "draft",
+    priority: initialApplication?.priority || "",
+    date_applied: initialApplication?.date_applied || "",
+    next_action: initialApplication?.next_action || "",
+    next_action_date: initialApplication?.next_action_date || "",
+    resume_version: initialApplication?.resume_version || "",
+    cover_letter_sent: initialApplication?.cover_letter_sent || false,
 
-    interview_stage: initialApplication.interview_stage || "",
-    interview_notes: initialApplication.interview_notes || "",
-    role_fit: initialApplication.role_fit || "",
-    culture_fit: initialApplication.culture_fit || "",
-    rejection_reason: initialApplication.rejection_reason || "",
-    notes: initialApplication.notes || "",
-    reminder_enabled: initialApplication.reminder_enabled || false,
+    interview_stage: initialApplication?.interview_stage || "",
+    interview_notes: initialApplication?.interview_notes || "",
+    role_fit: initialApplication?.role_fit || "",
+    culture_fit: initialApplication?.culture_fit || "",
+    rejection_reason: initialApplication?.rejection_reason || "",
+    notes: initialApplication?.notes || "",
+    reminder_enabled: initialApplication?.reminder_enabled || false,
   });
+
+  const isSavingRef = useRef(false);
+  const isDeletingRef = useRef(false);
 
   const [techInput, setTechInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -67,6 +77,50 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
     fetchResumes();
   }, []);
 
+  useEffect(() => {
+    if (isLocal && !initialApplication && appId) {
+      const loadLocalApp = async () => {
+        try {
+          const app = await fetchApplicationById(null, appId);
+          if (app) {
+            setApplicationData(app);
+            setFormData({
+              company_name: app.company_name || "",
+              role: app.role || "",
+              tech_stack: app.tech_stack || [],
+              salary_range: app.salary_range || "",
+              currency: app.currency || "PHP",
+              location: app.location || "",
+              source: app.source || "",
+              job_link: app.job_link || "",
+              recruiter_name: app.recruiter_name || "",
+              contact_info: app.contact_info || "",
+              status: app.status || "draft",
+              priority: app.priority || "",
+              date_applied: app.date_applied || "",
+              next_action: app.next_action || "",
+              next_action_date: app.next_action_date || "",
+              resume_version: app.resume_version || "",
+              cover_letter_sent: app.cover_letter_sent || false,
+              interview_stage: app.interview_stage || "",
+              interview_notes: app.interview_notes || "",
+              role_fit: app.role_fit || "",
+              culture_fit: app.culture_fit || "",
+              rejection_reason: app.rejection_reason || "",
+              notes: app.notes || "",
+              reminder_enabled: app.reminder_enabled || false,
+            });
+          }
+        } catch (err) {
+          console.error("Failed to load local application", err);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadLocalApp();
+    }
+  }, [isLocal, initialApplication, appId]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
@@ -92,8 +146,25 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
     setFormData(prev => ({ ...prev, tech_stack: prev.tech_stack.filter((t: string) => t !== tech) }));
   };
 
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name === "company_name" || name === "role") {
+      setFormData(prev => ({ ...prev, [name]: normalizeTitleCase(value) }));
+    }
+    if (name === "role_fit" || name === "culture_fit") {
+      const num = parseInt(value);
+      if (!isNaN(num)) {
+        const clamped = Math.max(1, Math.min(5, num));
+        setFormData(prev => ({ ...prev, [name]: String(clamped) }));
+      }
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!applicationData?.id) return;
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
     setIsSaving(true);
     setToast(null);
 
@@ -107,19 +178,16 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
     };
 
     try {
-      const res = await fetch(`/api/applications/${initialApplication.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (!res.ok) throw new Error(data.error || "Failed to save application");
+      await updateApplication(user, applicationData.id, payload);
       
       setToast({ message: "Application updated successfully!", type: 'success' });
     } catch (err: unknown) {
       setToast({ message: (err as Error).message, type: 'error' });
     } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
     }
   };
@@ -146,21 +214,21 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
   }, [isDeleteModalMounted]);
 
   const executeDelete = async () => {
+    if (!applicationData?.id) return;
+    if (isDeletingRef.current) return;
+    isDeletingRef.current = true;
     setIsDeleting(true);
     closeDeleteModal();
     try {
-      const res = await fetch(`/api/applications/${initialApplication.id}`, {
-        method: "DELETE",
-      });
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to delete application");
-      }
+      await deleteApplication(user, applicationData.id);
       
       router.push('/dashboard');
     } catch (err: unknown) {
       setToast({ message: (err as Error).message, type: 'error' });
+      isDeletingRef.current = false;
       setIsDeleting(false);
     }
   };
@@ -193,6 +261,19 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
       </div>
     </div>
   ) : null;
+
+  if (isLoading) {
+    return <div className="max-w-5xl mx-auto p-4 md:p-8 flex justify-center py-20 text-gray-500">Loading application details...</div>;
+  }
+
+  if (!applicationData) {
+    return (
+      <div className="max-w-5xl mx-auto p-4 md:p-8 text-center py-20">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-zinc-100 mb-4">Application Not Found</h2>
+        <Link href="/dashboard" className="text-blue-600 hover:underline">Return to Dashboard</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8 text-gray-900 dark:text-zinc-100 pb-24">
@@ -227,9 +308,26 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
         <section className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">
           <h2 className="text-xl font-semibold mb-6 border-b border-gray-200 dark:border-zinc-800 pb-4">Extracted Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Company Name</label><input required type="text" name="company_name" value={formData.company_name} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
-            <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Role</label><input required type="text" name="role" value={formData.role} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
-            <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Salary Range</label><input type="text" name="salary_range" value={formData.salary_range} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
+            <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Company Name</label><input required type="text" name="company_name" value={formData.company_name} onChange={handleInputChange} onBlur={handleBlur} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
+            <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Role</label><input required type="text" name="role" value={formData.role} onChange={handleInputChange} onBlur={handleBlur} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
+            <div>
+              <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Salary Range</label>
+              <div className="flex gap-2">
+                <select name="currency" value={formData.currency} onChange={handleInputChange} className="w-24 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100">
+                  <option value="PHP">PHP</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                  <option value="AUD">AUD</option>
+                  <option value="CAD">CAD</option>
+                  <option value="SGD">SGD</option>
+                  <option value="JPY">JPY</option>
+                  <option value="INR">INR</option>
+                  <option value="AED">AED</option>
+                </select>
+                <input type="text" name="salary_range" value={formData.salary_range} onChange={handleInputChange} className="flex-1 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+              </div>
+            </div>
             <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Location</label><input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -312,8 +410,8 @@ export default function ApplicationDetailClient({ initialApplication }: { initia
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Interview Stage</label><input type="text" name="interview_stage" value={formData.interview_stage} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" placeholder="e.g. Phone Screen, Technical, Final" /></div>
             <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Rejection Reason</label><input type="text" name="rejection_reason" value={formData.rejection_reason} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
-            <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Role Fit (1-5)</label><input type="number" min="1" max="5" name="role_fit" value={formData.role_fit} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
-            <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Culture Fit (1-5)</label><input type="number" min="1" max="5" name="culture_fit" value={formData.culture_fit} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
+            <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Role Fit (1-5)</label><input type="number" min="1" max="5" name="role_fit" value={formData.role_fit} onChange={handleInputChange} onBlur={handleBlur} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
+            <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Culture Fit (1-5)</label><input type="number" min="1" max="5" name="culture_fit" value={formData.culture_fit} onChange={handleInputChange} onBlur={handleBlur} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
           </div>
           <div className="mt-6 space-y-6">
             <div>

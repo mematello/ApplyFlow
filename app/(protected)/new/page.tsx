@@ -8,6 +8,8 @@ import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
 import { createApplication } from "../../../lib/data-source";
+import { normalizeTitleCase } from "../../../lib/utils/format";
+import { useRef } from "react";
 
 import { AIModel } from "../../../lib/types";
 
@@ -28,6 +30,7 @@ export default function NewApplicationPage() {
     role: "",
     tech_stack: [] as string[],
     salary_range: "",
+    currency: "PHP",
     location: "",
     source: "",
     recruiter_name: "",
@@ -43,6 +46,8 @@ export default function NewApplicationPage() {
     cover_letter_sent: false,
     raw_jd: "",
   });
+  
+  const isSavingRef = useRef(false);
   
   const [techInput, setTechInput] = useState("");
   const [resumes, setResumes] = useState<{ id: string, version_label: string, is_current: boolean, extracted_text: string | null }[]>([]);
@@ -317,6 +322,8 @@ export default function NewApplicationPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSavingRef.current) return;
+    isSavingRef.current = true;
     setIsSaving(true);
     setToast(null);
     try {
@@ -335,7 +342,7 @@ export default function NewApplicationPage() {
       setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err: unknown) {
       setToast({ message: (err as Error).message, type: 'error' });
-    } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
     }
   };
@@ -376,6 +383,20 @@ export default function NewApplicationPage() {
       ...prev,
       tech_stack: prev.tech_stack.filter(t => t !== tech)
     }));
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name === "company_name" || name === "role") {
+      setFormData(prev => ({ ...prev, [name]: normalizeTitleCase(value) }));
+    }
+    if (name === "role_fit" || name === "culture_fit") {
+      const num = parseInt(value);
+      if (!isNaN(num)) {
+        const clamped = Math.max(1, Math.min(5, num));
+        setFormData(prev => ({ ...prev, [name]: String(clamped) }));
+      }
+    }
   };
 
   return (
@@ -503,17 +524,31 @@ export default function NewApplicationPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Company Name</label>
-              <input required type="text" name="company_name" value={formData.company_name} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+              <input required type="text" name="company_name" value={formData.company_name} onChange={handleInputChange} onBlur={handleBlur} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
             </div>
             
             <div>
               <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Role</label>
-              <input required type="text" name="role" value={formData.role} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+              <input required type="text" name="role" value={formData.role} onChange={handleInputChange} onBlur={handleBlur} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
             </div>
 
             <div>
               <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Salary Range</label>
-              <input type="text" name="salary_range" value={formData.salary_range} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+              <div className="flex gap-2">
+                <select name="currency" value={formData.currency} onChange={handleInputChange} className="w-24 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100">
+                  <option value="PHP">PHP</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                  <option value="AUD">AUD</option>
+                  <option value="CAD">CAD</option>
+                  <option value="SGD">SGD</option>
+                  <option value="JPY">JPY</option>
+                  <option value="INR">INR</option>
+                  <option value="AED">AED</option>
+                </select>
+                <input type="text" name="salary_range" value={formData.salary_range} onChange={handleInputChange} className="flex-1 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+              </div>
             </div>
 
             <div>
@@ -578,14 +613,14 @@ export default function NewApplicationPage() {
                   Role Fit (1-5)
                   {aiSuggestedFields.has('role_fit') && <span title="AI suggested"><Sparkles className="w-3 h-3 text-blue-500 inline ml-1" /></span>}
                 </label>
-                <input type="number" min="1" max="5" name="role_fit" value={formData.role_fit} onChange={handleInputChange} className={`w-full p-2 rounded-md bg-white dark:bg-zinc-900 border ${aiSuggestedFields.has('role_fit') ? 'border-blue-400 dark:border-blue-500' : 'border-gray-300 dark:border-zinc-700'} focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100 transition-colors`} />
+                <input type="number" min="1" max="5" name="role_fit" value={formData.role_fit} onChange={handleInputChange} onBlur={handleBlur} className={`w-full p-2 rounded-md bg-white dark:bg-zinc-900 border ${aiSuggestedFields.has('role_fit') ? 'border-blue-400 dark:border-blue-500' : 'border-gray-300 dark:border-zinc-700'} focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100 transition-colors`} />
               </div>
               <div>
                 <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">
                   Culture Fit (1-5)
                   {aiSuggestedFields.has('culture_fit') && <span title="AI suggested"><Sparkles className="w-3 h-3 text-blue-500 inline ml-1" /></span>}
                 </label>
-                <input type="number" min="1" max="5" name="culture_fit" value={formData.culture_fit} onChange={handleInputChange} className={`w-full p-2 rounded-md bg-white dark:bg-zinc-900 border ${aiSuggestedFields.has('culture_fit') ? 'border-blue-400 dark:border-blue-500' : 'border-gray-300 dark:border-zinc-700'} focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100 transition-colors`} />
+                <input type="number" min="1" max="5" name="culture_fit" value={formData.culture_fit} onChange={handleInputChange} onBlur={handleBlur} className={`w-full p-2 rounded-md bg-white dark:bg-zinc-900 border ${aiSuggestedFields.has('culture_fit') ? 'border-blue-400 dark:border-blue-500' : 'border-gray-300 dark:border-zinc-700'} focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100 transition-colors`} />
               </div>
             </div>
 

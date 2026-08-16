@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { createClient } from '../../../lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -11,28 +11,36 @@ export default function OnboardingPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const isSavingRef = useRef(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (isSavingRef.current) return;
     
+    isSavingRef.current = true;
     setLoading(true);
     setError("");
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      router.push('/login');
-      return;
-    }
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
 
-    const { error: insertError } = await supabase
-      .from('profiles')
-      .insert({ id: user.id, full_name: name.trim() });
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({ id: user.id, full_name: name.trim() });
 
-    if (insertError) {
-      setError(insertError.message);
+      if (insertError) {
+        setError(insertError.message);
+      } else {
+        router.push('/dashboard');
+      }
+    } finally {
+      isSavingRef.current = false;
       setLoading(false);
-    } else {
-      router.push('/dashboard');
     }
   };
 

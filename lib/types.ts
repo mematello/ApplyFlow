@@ -12,6 +12,7 @@ export interface Application {
   role: string;
   tech_stack: string[];
   salary_range: string | null;
+  currency: string | null;
   location: string | null;
   source: string | null;
   recruiter_name: string | null;

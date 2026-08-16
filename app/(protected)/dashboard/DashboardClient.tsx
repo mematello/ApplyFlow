@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronUp, ChevronDown, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -41,13 +41,19 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
     }
   }, [isLocal]);
 
+  const isUpdatingRef = useRef<Set<string>>(new Set());
+
   const handleStatusChange = async (id: string, newStatus: string, e: React.ChangeEvent) => {
     e.stopPropagation(); // prevent row click navigation when modifying status
+    
+    if (isUpdatingRef.current.has(id)) return;
     
     // Find old status for rollback
     const appIndex = applications.findIndex(app => app.id === id);
     if (appIndex === -1) return;
     const oldStatus = applications[appIndex].status;
+
+    isUpdatingRef.current.add(id);
 
     // 1. Optimistic UI Update (immediate visual feedback)
     setApplications(prev => prev.map(app => app.id === id ? { ...app, status: newStatus } : app));
@@ -56,6 +62,7 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
     try {
       // In local mode, user is null. We simulate passing user or null to the abstraction.
       // Since this is a client component, we pass null if isLocal is true, otherwise fake a user object just to let data-source know we are authenticated (since data-source.ts just checks if user exists).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dummyUser = isLocal ? null : { id: 'auth' } as any; 
       await updateApplicationStatus(dummyUser, id, newStatus);
     } catch (err) {
@@ -63,6 +70,8 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
       // 3. Rollback on failure!
       alert("Failed to save status update. Reverting change.");
       setApplications(prev => prev.map(app => app.id === id ? { ...app, status: oldStatus } : app));
+    } finally {
+      isUpdatingRef.current.delete(id);
     }
   };
 

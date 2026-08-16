@@ -52,6 +52,7 @@ export async function middleware(request: NextRequest) {
     url.pathname === '/signup' ||
     url.pathname === '/dashboard' ||
     url.pathname === '/new' ||
+    /^\/applications\/[a-zA-Z0-9-_]+$/.test(url.pathname) ||
     url.pathname.startsWith('/auth/callback') ||
     url.pathname.startsWith('/api/cron');
 
