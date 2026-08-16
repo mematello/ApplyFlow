@@ -91,11 +91,13 @@ graph TD
 
 ```text
 app/
-  (protected)/          → authenticated dashboard + "/new" application flow
+  (auth)/               → login, signup, and shared auth layout
+  (protected)/          → authenticated dashboard, "/new" application flow, and settings
   api/
     extract/            → AI job-description extraction endpoint
     match/              → AI resume-fit analysis endpoint
     cron/reminders/     → scheduled follow-up email job
+    account/delete/     → account deletion and storage cleanup
 lib/
   ai/models.ts          → model selection, fallback, and error-parsing logic
   supabase/             → browser / server / service-role Supabase clients
@@ -150,6 +152,7 @@ sequenceDiagram
 | `interview_stages` | Timestamped stages/notes tied to a specific application |
 | `resumes` | Uploaded resume metadata + extracted text (files live in Supabase Storage) |
 | `ai_model_usage` | Tracks daily request counts and temporary blocks per Gemini model |
+| `user_api_keys` | Encrypted user-provided API keys for BYOK |
 
 All tables are protected by Row Level Security — users can only read/write their own data.
 
