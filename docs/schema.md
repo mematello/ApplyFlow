@@ -16,6 +16,7 @@ User profile data, linked to authentication.
 - `full_name` (TEXT, NOT NULL)
 - `created_at` (TIMESTAMPTZ, NOT NULL, Default `NOW()`)
 - `preferred_model` (TEXT, nullable)
+- `preferred_provider` (TEXT, nullable)
 
 ### `applications`
 Core entity for tracking job applications.
@@ -29,6 +30,7 @@ Core entity for tracking job applications.
 - `job_link` (TEXT, nullable)
 - `location` (TEXT, nullable)
 - `salary_range` (TEXT, nullable)
+- `currency` (TEXT, Default `'PHP'`)
 - `source` (TEXT, nullable)
 - `recruiter_name` (TEXT, nullable)
 - `contact_info` (TEXT, nullable)
@@ -76,6 +78,17 @@ Internal tracking for Gemini API rate limits and fallbacks.
 - `blocked_until` (TIMESTAMPTZ, nullable)
 - **Primary Key**: `(model_name, date)`
 
+### `user_api_keys`
+Stores encrypted API keys for users utilizing the BYOK (Bring Your Own Key) feature.
+- `id` (UUID, Primary Key, Default `gen_random_uuid()`)
+- `user_id` (UUID, NOT NULL, References `auth.users(id)` ON DELETE CASCADE)
+- `provider` (TEXT, NOT NULL)
+- `encrypted_key` (TEXT, NOT NULL)
+- `iv` (TEXT, NOT NULL)
+- `auth_tag` (TEXT, NOT NULL)
+- `created_at` (TIMESTAMPTZ, NOT NULL, Default `NOW()`)
+- **Constraints**: UNIQUE `(user_id, provider)`
+
 ---
 
 ## Enums
@@ -94,6 +107,8 @@ All application tables have RLS enabled to isolate tenant data.
   - SELECT: `id = auth.uid()`
   - INSERT/UPDATE: `id = auth.uid()`
 - **`resumes`**:
+  - Full CRUD access where `user_id = auth.uid()`
+- **`user_api_keys`**:
   - Full CRUD access where `user_id = auth.uid()`
 - **`storage.objects` (Bucket: 'resumes')**:
   - View/Upload/Update/Delete files where the first segment of the storage folder path exactly matches `auth.uid()`.

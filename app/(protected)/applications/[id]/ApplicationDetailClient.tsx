@@ -12,7 +12,7 @@ import { useRef } from 'react';
 
 import { Application } from '../../../../lib/types';
 import { updateApplication, deleteApplication, fetchApplicationById } from '../../../../lib/data-source';
-import { normalizeTitleCase } from '../../../../lib/utils/format';
+import { normalizeTitleCase, normalizeSalaryInput } from '../../../../lib/utils/format';
 
 export default function ApplicationDetailClient({ initialApplication, isLocal, appId }: { initialApplication: Application | null, isLocal?: boolean, appId?: string }) {
   const router = useRouter();
@@ -150,6 +150,9 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
     const { name, value } = e.target;
     if (name === "company_name" || name === "role") {
       setFormData(prev => ({ ...prev, [name]: normalizeTitleCase(value) }));
+    }
+    if (name === "salary_range") {
+      setFormData(prev => ({ ...prev, [name]: normalizeSalaryInput(value) }));
     }
     if (name === "role_fit" || name === "culture_fit") {
       const num = parseInt(value);
@@ -325,7 +328,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
                   <option value="INR">INR</option>
                   <option value="AED">AED</option>
                 </select>
-                <input type="text" name="salary_range" value={formData.salary_range} onChange={handleInputChange} className="flex-1 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+                <input type="text" name="salary_range" value={formData.salary_range || ''} onChange={handleInputChange} onBlur={handleBlur} className="flex-1 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
               </div>
             </div>
             <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Location</label><input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>

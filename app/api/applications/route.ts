@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '../../../lib/supabase/server';
 import { z } from 'zod';
-import { JobExtractionSchema } from '../../../lib/schemas/extraction';
-
-// Extend the extraction schema to include manual application fields
-const ApplicationInsertSchema = JobExtractionSchema.extend({
+// Independent schema for DB inserts
+const ApplicationInsertSchema = z.object({
+  company_name: z.string(),
+  role: z.string(),
+  tech_stack: z.array(z.string()).default([]),
+  salary_range: z.string().nullable().optional(),
+  currency: z.string().default('PHP'),
+  location: z.string().nullable().optional(),
+  source: z.string().nullable().optional(),
+  recruiter_name: z.string().nullable().optional(),
+  contact_info: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
   date_applied: z.string().nullable().optional(),
   status: z.enum(['draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn']).default('draft'),
   job_link: z.string().nullable().optional(),

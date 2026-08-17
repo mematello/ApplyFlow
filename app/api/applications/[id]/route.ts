@@ -8,6 +8,7 @@ const PatchSchema = z.object({
   role: z.string(),
   tech_stack: z.array(z.string()),
   salary_range: z.string().nullable(),
+  currency: z.string().optional(),
   location: z.string().nullable(),
   source: z.string().nullable(),
   recruiter_name: z.string().nullable(),

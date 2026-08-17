@@ -8,7 +8,7 @@ import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
 import { createApplication } from "../../../lib/data-source";
-import { normalizeTitleCase } from "../../../lib/utils/format";
+import { normalizeTitleCase, normalizeSalaryInput } from "../../../lib/utils/format";
 import { useRef } from "react";
 
 import { AIModel } from "../../../lib/types";
@@ -256,13 +256,23 @@ export default function NewApplicationPage() {
       // Single atomic form state update using loose null checks (!= null)
       const newSuggested = new Set<string>();
 
+      let formattedSalary: string | null = null;
+      if (extracted.salary_min != null && extracted.salary_max != null) {
+        if (extracted.salary_min === extracted.salary_max) {
+          formattedSalary = (extracted.salary_min as number).toLocaleString('en-US');
+        } else {
+          formattedSalary = `${(extracted.salary_min as number).toLocaleString('en-US')} - ${(extracted.salary_max as number).toLocaleString('en-US')}`;
+        }
+      } else if (extracted.salary_min != null) {
+        formattedSalary = (extracted.salary_min as number).toLocaleString('en-US');
+      }
+
       setFormData(prev => {
         const updated = {
           ...prev,
           company_name: (extracted.company_name as string) || "",
           role: (extracted.role as string) || "",
           tech_stack: (extracted.tech_stack as string[]) || [],
-          salary_range: (extracted.salary_range as string) || "",
           location: (extracted.location as string) || "",
           source: (extracted.source as string) || "",
           recruiter_name: (extracted.recruiter_name as string) || "",
@@ -270,6 +280,16 @@ export default function NewApplicationPage() {
           notes: (extracted.notes as string) || "",
           raw_jd: jobDescription,
         };
+
+        if (formattedSalary !== null) {
+          updated.salary_range = formattedSalary;
+          newSuggested.add("salary_range");
+        }
+        
+        if (extracted.currency) {
+          updated.currency = extracted.currency as string;
+          newSuggested.add("currency");
+        }
 
         if (matchSuccess && matchedData) {
           if (matchedData.role_fit != null) { updated.role_fit = String(matchedData.role_fit); newSuggested.add("role_fit"); }
@@ -389,6 +409,9 @@ export default function NewApplicationPage() {
     const { name, value } = e.target;
     if (name === "company_name" || name === "role") {
       setFormData(prev => ({ ...prev, [name]: normalizeTitleCase(value) }));
+    }
+    if (name === "salary_range") {
+      setFormData(prev => ({ ...prev, [name]: normalizeSalaryInput(value) }));
     }
     if (name === "role_fit" || name === "culture_fit") {
       const num = parseInt(value);
@@ -547,7 +570,7 @@ export default function NewApplicationPage() {
                   <option value="INR">INR</option>
                   <option value="AED">AED</option>
                 </select>
-                <input type="text" name="salary_range" value={formData.salary_range} onChange={handleInputChange} className="flex-1 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+                <input type="text" name="salary_range" value={formData.salary_range} onChange={handleInputChange} onBlur={handleBlur} className="flex-1 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
               </div>
             </div>
 

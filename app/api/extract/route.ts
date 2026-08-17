@@ -17,7 +17,9 @@ const geminiSchema = {
       items: { type: Type.STRING },
       description: "All programming languages, frameworks, databases, and technical tools explicitly mentioned in requirements or responsibilities, as individual items — split combined mentions like 'C#, C/C++' into separate entries"
     },
-    salary_range: { type: Type.STRING, nullable: true, description: "Compensation figures if stated anywhere in the posting, including ranges with currency symbols like ₱ or PHP" },
+    salary_min: { type: Type.NUMBER, nullable: true, description: "The minimum compensation figure as a clean number, e.g. 60000. Null if no salary is stated." },
+    salary_max: { type: Type.NUMBER, nullable: true, description: "The maximum compensation figure as a clean number, e.g. 90000. If it's a fixed salary instead of a range, set this equal to salary_min. Null if no salary is stated." },
+    currency: { type: Type.STRING, description: "The 3-letter currency code of the salary (e.g., 'PHP', 'USD', 'EUR'). Guessed from currency symbols (₱, $, €), location, or explicit mentions. Default to 'PHP' if completely ambiguous." },
     location: { type: Type.STRING, nullable: true, description: "City/region and remote/hybrid status where the job is based. This often appears as a standalone line near the top (e.g. 'Makati City, Metro Manila') even without an explicit 'Location:' label, and may also be restated later in requirements as a willingness-to-work clause — check the entire posting, not just the header" },
     source: { type: Type.STRING, nullable: true, description: "Where this posting was found or published, if mentioned (e.g. job board name)" },
     recruiter_name: { type: Type.STRING, nullable: true, description: "Name of a specific recruiter or hiring contact person, if named" },
@@ -130,7 +132,9 @@ Example Output:
     "TypeScript",
     "TailwindCSS"
   ],
-  "salary_range": "₱60,000-₱90,000",
+  "salary_min": 60000,
+  "salary_max": 90000,
+  "currency": "PHP",
   "location": "BGC, Taguig",
   "source": null,
   "recruiter_name": null,
@@ -139,7 +143,7 @@ Example Output:
 }`;
 
     const systemInstruction1 = 'You are an expert ATS data extraction AI. Extract the job details from the provided job description. Ensure the output strictly follows the requested JSON schema. If information is missing, leave the nullable fields as null.' + oneShotExample;
-    const systemInstruction2 = 'You are an expert ATS data extraction AI. Extract the following exact fields: company_name (string), role (string), tech_stack (array of strings), salary_range (string or null), location (string or null), source (string or null), recruiter_name (string or null), contact_info (string or null), notes (string or null). You MUST return valid JSON matching this structure exactly. Missing fields MUST be null, not omitted.' + oneShotExample;
+    const systemInstruction2 = 'You are an expert ATS data extraction AI. Extract the following exact fields: company_name (string), role (string), tech_stack (array of strings), salary_min (number or null), salary_max (number or null), currency (string), location (string or null), source (string or null), recruiter_name (string or null), contact_info (string or null), notes (string or null). You MUST return valid JSON matching this structure exactly. Missing fields MUST be null, not omitted.' + oneShotExample;
 
     const serviceSupabase = createServiceClient();
     const excludedModels: string[] = [];
