@@ -61,6 +61,7 @@ export default function NewApplicationPage() {
   const [activeModelName, setActiveModelName] = useState<string>("");
   const [isUpdatingModel, setIsUpdatingModel] = useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [hasGoogleKey, setHasGoogleKey] = useState(false);
 
   useEffect(() => {
     const fetchResumes = async () => {
@@ -88,6 +89,21 @@ export default function NewApplicationPage() {
     
     const fetchActiveModel = async () => {
       try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        let userHasKey = false;
+        if (user) {
+          const { data: keysData } = await supabase
+            .from('user_api_keys')
+            .select('provider')
+            .eq('user_id', user.id)
+            .eq('provider', 'google');
+          if (keysData && keysData.length > 0) {
+            userHasKey = true;
+            setHasGoogleKey(true);
+          }
+        }
+
         const res = await fetch('/api/models');
         if (res.ok) {
           const data = await res.json();
@@ -101,8 +117,8 @@ export default function NewApplicationPage() {
             ...modelsData.filter((m: AIModel) => m.name !== prefModel)
           ];
           const active = orderedModels.find((m: AIModel) => {
-            const mb = m.blocked_until && new Date(m.blocked_until) > new Date();
-            const me = m.request_count >= m.dailyLimit;
+            const mb = !userHasKey && m.blocked_until && new Date(m.blocked_until) > new Date();
+            const me = !userHasKey && m.request_count >= m.dailyLimit;
             return !mb && !me;
           });
           
@@ -135,8 +151,8 @@ export default function NewApplicationPage() {
         ...aiModels.filter((m: AIModel) => m.name !== newModel)
       ];
       const active = orderedModels.find((m: AIModel) => {
-        const mb = m.blocked_until && new Date(m.blocked_until) > new Date();
-        const me = m.request_count >= m.dailyLimit;
+        const mb = !hasGoogleKey && m.blocked_until && new Date(m.blocked_until) > new Date();
+        const me = !hasGoogleKey && m.request_count >= m.dailyLimit;
         return !mb && !me;
       });
       if (active) {
@@ -475,8 +491,8 @@ export default function NewApplicationPage() {
                         <div className="px-3 py-2 text-sm text-gray-500">Loading...</div>
                       ) : (
                         aiModels.map((m: AIModel) => {
-                          const isBlocked = m.blocked_until && new Date(m.blocked_until) > new Date();
-                          const isExhausted = m.request_count >= m.dailyLimit;
+                          const isBlocked = !hasGoogleKey && m.blocked_until && new Date(m.blocked_until) > new Date();
+                          const isExhausted = !hasGoogleKey && m.request_count >= m.dailyLimit;
                           const unavailable = isBlocked || isExhausted;
                           const isSelected = preferredModel === m.name;
                           
@@ -497,7 +513,7 @@ export default function NewApplicationPage() {
                               <div className="flex flex-col">
                                 <span className="font-medium">{m.name}</span>
                                 <span className="text-xs text-gray-500 dark:text-zinc-400 mt-0.5">
-                                  {unavailable ? (isBlocked ? 'Temporarily Blocked' : 'Daily Limit Reached') : `${m.request_count}/${m.dailyLimit} requests used`}
+                                  {hasGoogleKey ? 'Unlimited (using your API key)' : (unavailable ? (isBlocked ? 'Temporarily Blocked' : 'Daily Limit Reached') : `${m.request_count}/${m.dailyLimit} requests used`)}
                                 </span>
                               </div>
                               {isSelected && <Sparkles className="w-4 h-4" />}

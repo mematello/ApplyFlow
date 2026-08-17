@@ -379,13 +379,16 @@ export default function SettingsClient({
         ) : (
           <div className="space-y-4">
             {aiModels.map(model => {
-              const isBlocked = model.blocked_until && new Date(model.blocked_until) > new Date();
-              const isExhausted = model.request_count >= model.dailyLimit;
+              const hasGoogleKey = apiKeys.some(k => k.provider === 'google');
+              const isBlocked = !hasGoogleKey && model.blocked_until && new Date(model.blocked_until) > new Date();
+              const isExhausted = !hasGoogleKey && model.request_count >= model.dailyLimit;
               const unavailable = isBlocked || isExhausted;
               const isPreferred = model.name === preferredModel;
               
               let statusText = `${model.request_count} / ${model.dailyLimit} used today`;
-              if (isBlocked && model.blocked_until) {
+              if (hasGoogleKey) {
+                statusText = "BYOK Active — your own quota, not shared limits";
+              } else if (isBlocked && model.blocked_until) {
                 statusText = `Blocked until ${new Date(model.blocked_until).toLocaleTimeString()}`;
               } else if (isExhausted) {
                 statusText = `Daily limit reached`;
@@ -397,8 +400,8 @@ export default function SettingsClient({
                 ...aiModels.filter(m => m.name !== preferredModel)
               ];
               const activeModel = orderedModels.find(m => {
-                const mb = m.blocked_until && new Date(m.blocked_until) > new Date();
-                const me = m.request_count >= m.dailyLimit;
+                const mb = !hasGoogleKey && m.blocked_until && new Date(m.blocked_until) > new Date();
+                const me = !hasGoogleKey && m.request_count >= m.dailyLimit;
                 return !mb && !me;
               });
               
@@ -427,13 +430,15 @@ export default function SettingsClient({
                       <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{model.description}</p>
                       
                       <div className="mt-3 flex items-center gap-4">
-                        <div className="flex-1 max-w-xs h-2 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full ${unavailable ? 'bg-red-500' : 'bg-blue-500'}`} 
-                            style={{ width: `${Math.min(100, (model.request_count / model.dailyLimit) * 100)}%` }}
-                          />
-                        </div>
-                        <span className={`text-xs font-medium ${unavailable ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-zinc-400'}`}>
+                        {!hasGoogleKey && (
+                          <div className="flex-1 max-w-xs h-2 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full ${unavailable ? 'bg-red-500' : 'bg-blue-500'}`} 
+                              style={{ width: `${Math.min(100, (model.request_count / model.dailyLimit) * 100)}%` }}
+                            />
+                          </div>
+                        )}
+                        <span className={`text-xs font-medium ${hasGoogleKey ? 'text-blue-600 dark:text-blue-400' : (unavailable ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-zinc-400')}`}>
                           {statusText}
                         </span>
                       </div>

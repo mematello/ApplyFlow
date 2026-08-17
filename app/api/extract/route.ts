@@ -172,7 +172,11 @@ Example Output:
 
       const executeModelCall = async (instruction: string): Promise<string> => {
         // aiProvider is guaranteed to be set here either from custom key or fallback
-        return await aiProvider!.generateObject(instruction, geminiSchema, activeModelName, jobDescription);
+        const result = await aiProvider!.generateObject(instruction, geminiSchema, activeModelName, jobDescription);
+        if (!hasCustomKey) {
+          await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
+        }
+        return result;
       };
 
       const parseAndValidate = (rawText: string) => {
@@ -189,9 +193,6 @@ Example Output:
         try {
           rawJsonText = await executeModelCall(systemInstruction1);
           const validated = parseAndValidate(rawJsonText);
-          if (!hasCustomKey) {
-            await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
-          }
           return NextResponse.json({ data: validated, model_used: activeModelName });
         } catch (err1: unknown) {
           const parsed1 = parseGeminiError(err1);
@@ -201,9 +202,6 @@ Example Output:
           console.error(`[Extract API] ${activeModelName} Attempt 1 schema parse failed, trying Attempt 2...`);
           rawJsonText = await executeModelCall(systemInstruction2);
           const validated = parseAndValidate(rawJsonText);
-          if (!hasCustomKey) {
-            await serviceSupabase.rpc('increment_model_usage', { p_model_name: activeModelName });
-          }
           return NextResponse.json({ data: validated, model_used: activeModelName });
         }
       } catch (modelErr: unknown) {
