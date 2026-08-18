@@ -1,5 +1,17 @@
 # ApplyFlow — Changelog
 
+## [2026-08-19]
+- Implemented: Anonymous local tracking via IndexedDB with migration-to-Supabase upon signup.
+- Implemented: Auth UX improvements (cross-tab magic link detection, back-to-landing link).
+- Implemented: Added optional resume upload step to onboarding by reusing the extracted `ResumeUploader` component (also used in Settings).
+- Implemented: Free-tier AI usage limit (5 lifetime free uses without BYOK), protected by a `service_role`-only trigger, alongside BYOK acquisition instructions in Settings.
+- Fixed: Extensive data entry fixes including text field normalization (company/role), salary currency selector and input normalization, 1-5 role/culture fit validation, and double-submit guards across save, delete, and status actions.
+- Fixed: Resolved local-mode application detail routing bug (middleware regex fixed to include underscores in local IDs).
+- Fixed: Added missing `currency` column migration and decoupled `ApplicationInsertSchema` from `JobExtractionSchema`.
+- Refactored: `/api/extract` updated to return `salary_min`, `salary_max`, and `currency` as structured fields instead of a single `salary_range` string.
+- Fixed: `ai_model_usage` counter accuracy fixed (extract route was undercounting retried calls) and BYOK-aware UI implemented (hides shared-quota display when user provides their own key).
+- Fixed: Mobile layout fixes across `/new`, `/applications/[id]`, `/onboarding`, `/settings`, and `/dashboard` (table converted to stacked cards).
+
 ## [2026-08-16]
 - Implemented: Landing page redesign (added dark mode support, updated copy accuracy, and restructured signup/login into a shared `(auth)` group).
 - Implemented: Bring Your Own Key (BYOK) merged with a Gemini-only scope for secure API key overrides.

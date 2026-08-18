@@ -8,9 +8,10 @@ Built to solve a real problem from my own job search: manually re-typing job pos
 
 ## What it does
 
+*   **No signup required** — jump straight into **Local Mode** to try it out. Your data saves securely to your browser (IndexedDB) and can be migrated to the cloud later if you create an account.
 *   **Paste a job description** into the app.
     ![New Job Application](./docs/screenshots/new_job_application.png)
-*   **AI extraction** — Gemini parses the raw text into structured fields: company, role, tech stack, salary range, location, source, recruiter contact, and notes.
+*   **AI extraction** — Gemini parses the raw text into structured fields: company, role, tech stack, salary range (with currency selector), location, source, recruiter contact, and notes.
 *   **AI fit analysis** — the same job description is compared against your uploaded resume, producing a role fit and culture fit score (1–5), a priority rating (low/medium/high), and a list of matched strengths vs. gaps.
     ![AI Fit Analysis](./docs/screenshots/ai_fit_analysis.png)
 *   **Review & save** — both results populate a single form; edit anything before saving.

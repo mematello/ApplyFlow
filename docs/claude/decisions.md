@@ -1,5 +1,21 @@
 # ApplyFlow — Decisions Log
 
+## [2026-08-19] Free-Tier AI Limits
+- Context: Need to control API costs for users without their own API keys.
+- Decision: Implemented 5 lifetime free AI uses (not recurring/resettable). This is enforced server-side with a hard stop until BYOK is added, and protected by a PostgreSQL trigger preventing client-side bypass via RLS.
+
+## [2026-08-19] AI Extraction Schema Decoupling
+- Context: A bug caused by a shared schema (`salary_max` leak into DB) demonstrated the risks of tightly coupling the AI extraction shape to the database insert shape.
+- Decision: `JobExtractionSchema` and DB insert/update schemas (`ApplicationInsertSchema`) must never be coupled via `extend()` or `pick()`. They will be kept fully independent going forward.
+
+## [2026-08-19] Dashboard Mobile Layout
+- Context: The dashboard applications table was causing horizontal scrolling issues on narrow screens.
+- Decision: Switched the table to a stacked-card layout on mobile (`md:table-row` / `block` pattern) instead of using scroll hints or horizontal scroll bars, providing a much better native mobile experience.
+
+## [2026-08-19] Local-Mode Application Detail Routing
+- Context: Users in local-only mode need access to application detail pages without triggering auth redirects.
+- Decision: Added local-mode application detail access to the `middleware.ts` public route allowlist, scoped strictly to the `/applications/[id]` regex pattern.
+
 ## [2026-08-16] Impeccable Design Tool Experiment
 - Context: Explored using the Impeccable design system to elevate the UI.
 - Decision: The experiment was conducted on a separate branch and evaluated. We decided to discard it; the branch was deleted, and no changes were merged to `main`.

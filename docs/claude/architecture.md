@@ -10,18 +10,23 @@ app/
     match/              → AI resume-fit analysis endpoint
     cron/reminders/     → Scheduled follow-up email job
     account/delete/     → Account deletion and storage cleanup
+    applications/migrate/ → Endpoint for migrating local applications to Supabase
+  migrate/              → Interstitial page for local-to-cloud migration
 components/
   ThemeToggle.tsx       → Dark/light mode toggle
+  ResumeUploader.tsx    → Shared component for resume uploads (used in Settings and Onboarding)
 lib/
   ai/models.ts          → Model selection, fallback, and error-parsing logic
   supabase/             → Browser / server / service-role Supabase clients
+  local/                → IndexedDB adapters (`db.ts`, `applications.ts`) for local-mode
+  data-source.ts        → Data abstraction layer routing between Supabase and IndexedDB
 docs/
   schema.md             → Database schema reference
 ```
 
 ## Data model
-- **`users`** & **`profiles`**: Tied to Supabase Auth.
-- **`applications`**: Core entity (company, role, status, AI fit scores).
+- **`users`** & **`profiles`**: Tied to Supabase Auth. Contains `free_ai_uses_remaining` (protected by trigger).
+- **`applications`**: Core entity (company, role, status, AI fit scores). Includes `currency`.
 - **`interview_stages`**: Tracks specific interview rounds per application.
 - **`resumes`**: References to user's uploaded PDFs in Supabase Storage.
 - **`ai_model_usage`**: Internal tracking for Gemini rate limits (shared across concurrent requests).
@@ -29,7 +34,9 @@ docs/
 
 ## Key conventions
 - **State & Data Access**: Next.js App Router conventions with Server Components where possible.
+- **Local-Mode Abstraction**: A unified data-source layer (`lib/data-source.ts`) handles transparent routing to either Supabase or IndexedDB based on authentication state.
 - **Security & RLS**: All Supabase tables use Row Level Security (RLS) scoping data to `auth.uid()`.
+- **Free Tier Restrictions**: Increments and decrements of `free_ai_uses_remaining` are handled exclusively via the `decrement_free_ai_uses` RPC. A Postgres trigger (`protect_free_ai_uses`) prevents client resets.
 - **API Defense-in-Depth**: Server-side API routes explicitly re-scope database queries to the authenticated user, acting as a secondary defense layer alongside RLS.
 - **AI Calls**: API requests to Gemini are resilient; they use a multi-model fallback chain to avoid failure on 429/503 errors and persist temporary model blocks in Postgres. 
 - **Settings & BYOK**: The `app/(protected)/settings/` page includes an "AI Providers & BYOK" section scoped to Google Gemini only, allowing users to override global limits securely.
