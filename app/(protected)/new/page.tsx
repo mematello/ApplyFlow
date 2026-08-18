@@ -633,7 +633,7 @@ export default function NewApplicationPage() {
                   <option value="INR">INR</option>
                   <option value="AED">AED</option>
                 </select>
-                <input type="text" name="salary_range" value={formData.salary_range} onChange={handleInputChange} onBlur={handleBlur} className="flex-1 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+                <input type="text" name="salary_range" value={formData.salary_range} onChange={handleInputChange} onBlur={handleBlur} className="flex-1 min-w-0 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
               </div>
             </div>
 

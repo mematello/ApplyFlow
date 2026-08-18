@@ -281,7 +281,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
   return (
     <div className="max-w-5xl mx-auto p-4 md:p-8 text-gray-900 dark:text-zinc-100 pb-24">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
           <Link href="/dashboard" className="text-gray-500 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 mb-2 flex items-center gap-2 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back to Dashboard
@@ -328,7 +328,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
                   <option value="INR">INR</option>
                   <option value="AED">AED</option>
                 </select>
-                <input type="text" name="salary_range" value={formData.salary_range || ''} onChange={handleInputChange} onBlur={handleBlur} className="flex-1 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+                <input type="text" name="salary_range" value={formData.salary_range || ''} onChange={handleInputChange} onBlur={handleBlur} className="flex-1 min-w-0 p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
               </div>
             </div>
             <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Location</label><input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>

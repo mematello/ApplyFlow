@@ -432,7 +432,7 @@ export default function SettingsClient({
                       </label>
                       <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{model.description}</p>
                       
-                      <div className="mt-3 flex items-center gap-4">
+                      <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                         {!hasGoogleKey && (
                           <div className="flex-1 max-w-xs h-2 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
                             <div 

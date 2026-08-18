@@ -195,9 +195,9 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
       </div>
 
       {/* Table Container */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-sm overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[800px]">
-          <thead className="bg-gray-50 dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800">
+      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-sm md:overflow-x-auto">
+        <table className="w-full text-left border-collapse block md:table min-w-full md:min-w-[800px]">
+          <thead className="bg-gray-50 dark:bg-zinc-950 border-b border-gray-200 dark:border-zinc-800 hidden md:table-header-group">
             <tr>
               <th 
                 className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400 cursor-pointer hover:text-gray-900 dark:hover:text-zinc-200 select-none transition-colors group whitespace-nowrap"
@@ -227,16 +227,20 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
               <th className="p-4 text-sm font-medium text-gray-500 dark:text-zinc-400 whitespace-nowrap">Next Action Date</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-zinc-800">
+          <tbody className="block md:table-row-group divide-y divide-gray-100 dark:divide-zinc-800">
             {sortedApps.map(app => (
               <tr 
                 key={app.id} 
                 onClick={() => handleRowClick(app.id)}
-                className="hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all duration-150 cursor-pointer group animate-in fade-in"
+                className="hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-all duration-150 cursor-pointer group animate-in fade-in flex flex-col md:table-row p-4 md:p-0 border-b md:border-b-0 border-gray-100 dark:border-zinc-800 last:border-0"
               >
-                <td className="p-4 font-medium text-gray-900 dark:text-zinc-100">{app.company_name}</td>
-                <td className="p-4 text-gray-600 dark:text-zinc-300">{app.role}</td>
-                <td className="p-4">
+                <td className="md:p-4 font-medium text-gray-900 dark:text-zinc-100 text-lg md:text-base block md:table-cell mb-1 md:mb-0">
+                  {app.company_name}
+                </td>
+                <td className="md:p-4 text-gray-600 dark:text-zinc-300 block md:table-cell mb-3 md:mb-0">
+                  {app.role}
+                </td>
+                <td className="md:p-4 block md:table-cell mb-3 md:mb-0">
                   {/* Status Dropdown masquerading as a colored badge */}
                   <div className={`inline-flex items-center rounded-full text-xs font-semibold select-none border ${STATUS_COLORS[app.status]}`}>
                     <select
@@ -261,24 +265,34 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
                     </select>
                   </div>
                 </td>
-                <td className="p-4 text-gray-500 dark:text-zinc-400">{app.date_applied || "—"}</td>
-                <td className="p-4">
-                  {app.priority ? (
-                    <span className={`text-xs px-2.5 py-1 rounded-md font-medium border ${
-                      app.priority === 'high' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' :
-                      app.priority === 'medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800' :
-                      'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800'
-                    }`}>
-                      {app.priority.toUpperCase()}
-                    </span>
-                  ) : "—"}
+                <td className="md:p-4 text-gray-500 dark:text-zinc-400 block md:table-cell text-sm md:text-base mb-1 md:mb-0">
+                  <span className="md:hidden font-medium text-gray-700 dark:text-zinc-300 mr-2">Applied:</span>
+                  {app.date_applied || "—"}
                 </td>
-                <td className="p-4 text-gray-500 dark:text-zinc-400">{app.next_action_date || "—"}</td>
+                <td className="md:p-4 block md:table-cell mb-2 md:mb-0">
+                  <div className="flex items-center">
+                    <span className="md:hidden font-medium text-gray-700 dark:text-zinc-300 mr-2 text-sm">Priority:</span>
+                    {app.priority ? (
+                      <span className={`text-xs px-2.5 py-1 rounded-md font-medium border ${
+                        app.priority === 'high' ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' :
+                        app.priority === 'medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800' :
+                        'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800'
+                      }`}>
+                        {app.priority.toUpperCase()}
+                      </span>
+                    ) : <span className="text-gray-500 md:hidden">—</span>}
+                    {!app.priority && <span className="hidden md:inline text-gray-500">—</span>}
+                  </div>
+                </td>
+                <td className="md:p-4 text-gray-500 dark:text-zinc-400 block md:table-cell text-sm md:text-base">
+                  <span className="md:hidden font-medium text-gray-700 dark:text-zinc-300 mr-2">Next Action:</span>
+                  {app.next_action_date || "—"}
+                </td>
               </tr>
             ))}
             {sortedApps.length === 0 && (
-              <tr className="animate-in fade-in">
-                <td colSpan={6} className="p-12 text-center text-gray-500 dark:text-zinc-400">
+              <tr className="animate-in fade-in block md:table-row">
+                <td colSpan={6} className="p-12 text-center text-gray-500 dark:text-zinc-400 block md:table-cell">
                   {searchQuery ? "No applications found matching your search and filter." : "No applications match the current filter."}
                 </td>
               </tr>
