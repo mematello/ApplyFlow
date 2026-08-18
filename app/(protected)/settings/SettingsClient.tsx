@@ -285,8 +285,11 @@ export default function SettingsClient({
       {/* AI Provider Settings */}
       <section className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">
         <h2 className="text-xl font-semibold mb-6 border-b border-gray-200 dark:border-zinc-800 pb-4">Google Gemini API Key (BYOK)</h2>
-        <p className="text-gray-600 dark:text-zinc-400 mb-6 text-sm">
+        <p className="text-gray-600 dark:text-zinc-400 mb-2 text-sm">
           Securely provide your own Google Gemini API key to bypass global usage limits.
+        </p>
+        <p className="text-gray-500 dark:text-zinc-500 mb-6 text-xs">
+          Don't have an API key? Get one for free at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">Google AI Studio</a>.
         </p>
         
         {/* Preferred Provider Selection */}

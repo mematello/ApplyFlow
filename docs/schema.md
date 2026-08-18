@@ -17,6 +17,7 @@ User profile data, linked to authentication.
 - `created_at` (TIMESTAMPTZ, NOT NULL, Default `NOW()`)
 - `preferred_model` (TEXT, nullable)
 - `preferred_provider` (TEXT, nullable)
+- `free_ai_uses_remaining` (INT, NOT NULL, Default `5`, protected by trigger)
 
 ### `applications`
 Core entity for tracking job applications.
@@ -125,3 +126,7 @@ All application tables have RLS enabled to isolate tenant data.
   Runs with elevated privileges (SECURITY DEFINER) to upsert and increment the `request_count` for a specific AI model for the current date, avoiding race conditions.
 - **`block_model(p_model_name, p_blocked_until)` (RPC)**
   Runs with elevated privileges (SECURITY DEFINER) to upsert and update the `blocked_until` timestamp when a model hits a 429 Quota Exceeded error.
+- **`decrement_free_ai_uses(p_user_id)` (RPC)**
+  Runs with elevated privileges (SECURITY DEFINER) to atomically decrement `free_ai_uses_remaining` in the `profiles` table.
+- **`protect_free_ai_uses` (Trigger)**
+  Reverts any updates to `free_ai_uses_remaining` on the `profiles` table unless performed by the `service_role`.

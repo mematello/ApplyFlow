@@ -62,6 +62,9 @@ export default function NewApplicationPage() {
   const [isUpdatingModel, setIsUpdatingModel] = useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [hasGoogleKey, setHasGoogleKey] = useState(false);
+  const [freeUses, setFreeUses] = useState<number | null>(null);
+  const [limitExhausted, setLimitExhausted] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     const fetchResumes = async () => {
@@ -93,6 +96,15 @@ export default function NewApplicationPage() {
         const { data: { user } } = await supabase.auth.getUser();
         let userHasKey = false;
         if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('free_ai_uses_remaining')
+            .eq('id', user.id)
+            .single();
+          if (profile) {
+            setFreeUses(profile.free_ai_uses_remaining);
+          }
+
           const { data: keysData } = await supabase
             .from('user_api_keys')
             .select('provider')
@@ -167,8 +179,11 @@ export default function NewApplicationPage() {
 
   const handleExtract = async () => {
     if (!jobDescription) return;
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsExtracting(true);
     setToast(null);
+    setLimitExhausted(false);
 
     const currentResume = resumes.find(r => r.is_current);
     const hasResumeToMatch = Boolean(currentResume && currentResume.extracted_text);
@@ -232,7 +247,9 @@ export default function NewApplicationPage() {
         const rawErrorMsg = data.message || data.error || `Extraction failed (${status})`;
         let errorMsg = typeof rawErrorMsg === 'string' ? rawErrorMsg : JSON.stringify(rawErrorMsg);
 
-        if (status === 429) {
+        if (data.error === 'FREE_LIMIT_EXHAUSTED' || errorMsg === 'FREE_LIMIT_EXHAUSTED') {
+          errorMsg = 'FREE_LIMIT_EXHAUSTED';
+        } else if (status === 429) {
           const min = Math.ceil(((data.retryAfterSeconds as number) || 60) / 60);
           errorMsg = `All AI models are currently at capacity. Please try again after ${min} minute${min !== 1 ? 's' : ''}.`;
         } else if (status === 503 || data.error === 'service_unavailable') {
@@ -349,10 +366,21 @@ export default function NewApplicationPage() {
         setToast({ message: "Extraction complete!", type: 'success' });
       }
 
+      if (!hasGoogleKey && freeUses !== null && freeUses > 0) {
+        setFreeUses(prev => (prev ? prev - 1 : 0));
+      }
+
     } catch (err: unknown) {
-      setToast({ message: (err as Error).message, type: 'error' });
+      const msg = (err as Error).message;
+      if (msg === 'FREE_LIMIT_EXHAUSTED') {
+        setLimitExhausted(true);
+      } else {
+        setToast({ message: msg, type: 'error' });
+      }
+    } finally {
       setIsExtracting(false);
       setIsMatching(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -534,20 +562,39 @@ export default function NewApplicationPage() {
             )}
           </div>
           
-          <div className="flex justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0">
+          <div className="flex justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0 flex-col sm:flex-row items-end sm:items-center">
             {isMatching && (
               <div className="px-4 py-2 text-blue-600 dark:text-blue-400 font-medium animate-pulse flex items-center gap-2">
                 <Sparkles className="w-4 h-4" /> Analyzing fit...
               </div>
             )}
-            <button
-              type="button"
-              onClick={handleExtract}
-              disabled={isExtracting || isMatching || !jobDescription.trim()}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isExtracting ? "Extracting with AI..." : "✨ Extract Data"}
-            </button>
+            
+            {limitExhausted ? (
+              <div className="flex items-center gap-4 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg border border-amber-200 dark:border-amber-900/50 max-w-lg">
+                <div className="text-sm text-amber-800 dark:text-amber-400">
+                  You've used all 5 of your free AI credits! To continue extracting data and matching resumes, please add your own Google Gemini API key.
+                </div>
+                <Link href="/settings" className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-sm font-medium whitespace-nowrap transition-colors">
+                  Go to Settings
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col items-end gap-1">
+                <button
+                  type="button"
+                  onClick={handleExtract}
+                  disabled={isExtracting || isMatching || !jobDescription.trim()}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isExtracting ? "Extracting with AI..." : "✨ Extract Data"}
+                </button>
+                {!hasGoogleKey && freeUses !== null && (
+                  <span className="text-xs text-gray-500 dark:text-zinc-400 mr-1">
+                    {freeUses} of 5 free AI uses remaining
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

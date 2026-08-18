@@ -55,14 +55,15 @@ export async function POST(req: Request) {
     let aiProvider: AiProvider | null = null;
     let hasCustomKey = false;
 
-    // 1. Fetch user's preferred provider
+    // 1. Fetch user's preferred provider and remaining free uses
     const { data: profile } = await supabase
       .from('profiles')
-      .select('preferred_provider')
+      .select('preferred_provider, free_ai_uses_remaining')
       .eq('id', user.id)
       .single();
     
     const preferredProvider = profile?.preferred_provider;
+    const freeAiUses = profile?.free_ai_uses_remaining ?? 0;
 
     // 2. Look for custom key if preferred_provider is set
     if (preferredProvider) {
@@ -112,6 +113,13 @@ export async function POST(req: Request) {
         console.error('[Extract API] Fallback provider instantiation failed:', err);
         return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
       }
+    }
+
+    if (!hasCustomKey && freeAiUses <= 0) {
+      return NextResponse.json(
+        { error: 'FREE_LIMIT_EXHAUSTED' },
+        { status: 403 }
+      );
     }
 
     // --- End BYOK Setup ---
@@ -193,6 +201,9 @@ Example Output:
         try {
           rawJsonText = await executeModelCall(systemInstruction1);
           const validated = parseAndValidate(rawJsonText);
+          if (!hasCustomKey) {
+            await serviceSupabase.rpc('decrement_free_ai_uses', { p_user_id: user.id });
+          }
           return NextResponse.json({ data: validated, model_used: activeModelName });
         } catch (err1: unknown) {
           const parsed1 = parseGeminiError(err1);
@@ -202,6 +213,9 @@ Example Output:
           console.error(`[Extract API] ${activeModelName} Attempt 1 schema parse failed, trying Attempt 2...`);
           rawJsonText = await executeModelCall(systemInstruction2);
           const validated = parseAndValidate(rawJsonText);
+          if (!hasCustomKey) {
+            await serviceSupabase.rpc('decrement_free_ai_uses', { p_user_id: user.id });
+          }
           return NextResponse.json({ data: validated, model_used: activeModelName });
         }
       } catch (modelErr: unknown) {

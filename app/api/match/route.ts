@@ -45,14 +45,15 @@ export async function POST(req: Request) {
     let aiProvider: AiProvider | null = null;
     let hasCustomKey = false;
 
-    // 1. Fetch user's preferred provider
+    // 1. Fetch user's preferred provider and remaining free uses
     const { data: profile } = await supabase
       .from('profiles')
-      .select('preferred_provider')
+      .select('preferred_provider, free_ai_uses_remaining')
       .eq('id', user.id)
       .single();
     
     const preferredProvider = profile?.preferred_provider;
+    const freeAiUses = profile?.free_ai_uses_remaining ?? 0;
 
     // 2. Look for custom key if preferred_provider is set
     if (preferredProvider) {
@@ -103,6 +104,18 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Server configuration error.' }, { status: 500 });
       }
     }
+
+    if (!hasCustomKey && freeAiUses <= 0) {
+      return NextResponse.json(
+        { error: 'FREE_LIMIT_EXHAUSTED' },
+        { status: 403 }
+      );
+    }
+
+    // NOTE: /api/match relies on /api/extract to actually decrement the free_ai_uses_remaining
+    // to avoid double-billing when they are fired in parallel. 
+    // If a standalone call path to /api/match is ever added in the future without /api/extract,
+    // this strategy will need to be revised or match will become a free loophole.
 
     // --- End BYOK Setup ---
 
