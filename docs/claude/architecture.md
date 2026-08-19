@@ -41,6 +41,8 @@ docs/
 - **AI Calls**: API requests to Gemini are resilient; they use a multi-model fallback chain to avoid failure on 429/503 errors and persist temporary model blocks in Postgres. 
 - **Settings & BYOK**: The `app/(protected)/settings/` page includes an "AI Providers & BYOK" section scoped to Google Gemini only, allowing users to override global limits securely.
 - **Theme**: Dark mode is implemented via `next-themes` (system default + manual toggle).
+- **Data Export**: The Settings page fetches application data and joins `interview_stages` (`settings/page.tsx`). The export feature processes this locally to export multi-format tracking data (CSV, JSON, XLSX using the `xlsx`/SheetJS dependency), handling column alignment and timeline flattening without compromising the main application DB shape.
+- **Auth Email Delivery**: Authentication emails are delivered via Gmail SMTP through Supabase custom SMTP (applyflow.noreply@gmail.com). This is a permanent solution; Resend is used solely for the `/api/cron/reminders` endpoint.
 
 ## Known constraints
 - **Gemini Rate Limits**: Requests can hit quota limits (`429`) or demand limits (`503`), necessitating the multi-model fallback design.

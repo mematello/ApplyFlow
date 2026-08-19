@@ -25,7 +25,7 @@ export default async function SettingsPage() {
   // Fetch applications for CSV export
   const { data: applications, error: appError } = await supabase
     .from('applications')
-    .select('*')
+    .select('*, interview_stages(*)')
     .eq('user_id', user.id);
 
   if (appError) {

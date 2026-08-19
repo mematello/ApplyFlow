@@ -11,6 +11,10 @@
 - Context: Need to control API costs for users without their own API keys.
 - Decision: Implemented 5 lifetime free AI uses (not recurring/resettable). This is enforced server-side with a hard stop until BYOK is added, and protected by a PostgreSQL trigger preventing client-side bypass via RLS.
 
+## [2026-08-19] Data Export Formatting
+- Context: The previous CSV export derived column headers dynamically from `Object.keys()` of the first application row, leading to misaligned columns when subsequent rows had fields the first row lacked (e.g. nulls).
+- Decision: Implemented a strict 25-field explicit allowlist to ensure export column stability. `raw_jd` (large free text) is included in JSON exports but excluded from CSV/XLSX for tabular readability. `interview_stages` are chronologically sorted and flattened into a single string (`all_interview_stages`) for tabular exports. The `resumes` table is excluded.
+
 ## [2026-08-19] AI Extraction Schema Decoupling
 - Context: A bug caused by a shared schema (`salary_max` leak into DB) demonstrated the risks of tightly coupling the AI extraction shape to the database insert shape.
 - Decision: `JobExtractionSchema` and DB insert/update schemas (`ApplicationInsertSchema`) must never be coupled via `extend()` or `pick()`. They will be kept fully independent going forward.

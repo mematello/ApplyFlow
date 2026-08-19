@@ -33,6 +33,7 @@ export interface Application {
   interview_stage: string | null;
   interview_notes: string | null;
   next_action_reminder_sent: boolean;
+  raw_jd: string | null;
   created_at: string;
   updated_at: string;
 }

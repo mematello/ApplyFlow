@@ -11,6 +11,7 @@ ApplyFlow is an AI-powered job application tracker built as a solo-developer per
 - **Data Scoping**: Every new API route handling user data must scope queries to the authenticated user explicitly, even where RLS also enforces it (belt and suspenders).
 - **Schema Changes**: When a plan involves a schema change, state it as an open question for approval rather than assuming it's fine, per our established workflow.
 - **UI Tasks**: Purely presentational/UI tasks should not touch data-fetching, API routes, or RLS logic unless explicitly asked.
+- **Verification/Testing**: Verification/testing tasks must use synthetic or seed test data, never real user data pulled via service_role or any RLS-bypassing method, even for validation purposes. Service-role use requires explicit proposal and approval BEFORE the action, not disclosure after.
 
 ## Workflow
 - Always produce an implementation plan before writing code, for review and approval. No direct-to-code changes on non-trivial tasks.

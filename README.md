@@ -19,6 +19,7 @@ Built to solve a real problem from my own job search: manually re-typing job pos
     ![Dashboard View](./docs/screenshots/dashboard.png)
 *   **Optional follow-up reminders** — set a "next action date" on any application, and a scheduled job emails you a reminder ahead of it. Leave it blank if you don't need a nudge.
     ![Reminder Notification](./docs/screenshots/reminder_notification.jpg)
+*   **Data Export** — multi-format export (CSV, JSON, XLSX) available in settings for offline analysis.
 
 ## Tech stack
 
@@ -41,8 +42,9 @@ Built to solve a real problem from my own job search: manually re-typing job pos
 **Document processing**
 *   `pdf-parse` and `mammoth` for extracting text from uploaded resumes (PDF/DOCX)
 
-**Notifications**
-*   Resend, used by a scheduled cron route to send follow-up reminder emails
+**Notifications & Auth**
+*   Auth magic links are delivered permanently via Gmail SMTP (accepting a ~500/day volume cap and automated sending risks in exchange for zero cost; no custom domain required).
+*   Resend is used exclusively by a scheduled cron route to send follow-up reminder emails.
 
 ## Architecture
 

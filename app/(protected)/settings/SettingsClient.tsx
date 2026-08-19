@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import ResumePreviewModal from "../../../components/ResumePreviewModal";
 import ResumeUploader from "../../../components/ResumeUploader";
 import { updatePreferredProvider, saveApiKey, deleteApiKey } from './actions';
+import * as xlsx from 'xlsx';
 
 import { Application, Resume, Profile, AIModel, ApiKey } from '../../../lib/types';
 
@@ -165,30 +166,113 @@ export default function SettingsClient({
     }
   };
 
-  const handleDownloadCSV = () => {
+  const handleExportData = (format: 'csv' | 'json' | 'xlsx') => {
     if (!applications || applications.length === 0) {
       alert("No applications to export.");
       return;
     }
 
-    const headers = Object.keys(applications[0]);
-    const csvContent = [
-      headers.join(','),
-      ...applications.map(app => 
-        headers.map(header => {
-          let val = app[header as keyof Application];
-          if (val === null || val === undefined) val = "";
-          // Escape quotes and wrap in quotes for CSV
-          return `"${String(val).replace(/"/g, '""')}"`;
-        }).join(',')
-      )
-    ].join('\n');
+    const fieldAllowlist = [
+      'company_name',
+      'role',
+      'status',
+      'date_applied',
+      'location',
+      'salary_range',
+      'currency',
+      'job_link',
+      'source',
+      'recruiter_name',
+      'contact_info',
+      'next_action',
+      'next_action_date',
+      'priority',
+      'role_fit',
+      'culture_fit',
+      'interview_stage',
+      'interview_notes',
+      'rejection_reason',
+      'notes',
+      'tech_stack',
+      'resume_version',
+      'cover_letter_sent',
+      'created_at',
+      'updated_at'
+    ];
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const processedData = applications.map(app => {
+      const processed: Record<string, unknown> = {};
+      
+      fieldAllowlist.forEach(field => {
+        let val = app[field as keyof Application];
+        
+        if (field === 'tech_stack' && Array.isArray(val)) {
+          val = val.join(', ');
+        }
+        
+        processed[field] = val !== null && val !== undefined ? val : "";
+      });
+
+      type AppWithStages = Application & { interview_stages?: { stage_name: string; stage_date: string }[] };
+      const stages = (app as AppWithStages).interview_stages || [];
+      if (stages.length > 0) {
+        const sortedStages = [...stages].sort((a, b) => {
+          const dateA = a.stage_date ? new Date(a.stage_date).getTime() : 0;
+          const dateB = b.stage_date ? new Date(b.stage_date).getTime() : 0;
+          return dateA - dateB;
+        });
+        
+        const stagesString = sortedStages.map(s => {
+          const dateStr = s.stage_date ? new Date(s.stage_date).toLocaleDateString() : 'No date';
+          return `${s.stage_name} (${dateStr})`;
+        }).join(' | ');
+        
+        processed['all_interview_stages'] = stagesString;
+      } else {
+        processed['all_interview_stages'] = "";
+      }
+
+      if (format === 'json') {
+        processed['raw_jd'] = app.raw_jd || "";
+      }
+
+      return processed;
+    });
+
+    let blob: Blob;
+    const filename = `applications_export.${format}`;
+
+    if (format === 'csv') {
+      const headers = Object.keys(processedData[0]);
+      const csvContent = [
+        headers.join(','),
+        ...processedData.map(row => 
+          headers.map(header => {
+            const val = row[header];
+            return `"${String(val).replace(/"/g, '""')}"`;
+          }).join(',')
+        )
+      ].join('\n');
+      blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      
+    } else if (format === 'json') {
+      blob = new Blob([JSON.stringify(processedData, null, 2)], { type: 'application/json' });
+      
+    } else if (format === 'xlsx') {
+      const worksheet = xlsx.utils.json_to_sheet(processedData);
+      const workbook = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(workbook, worksheet, "Applications");
+      
+      const excelBuffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'array' });
+      blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    } else {
+      return;
+    }
+
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", "applications_export.csv");
+    link.setAttribute("download", filename);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -290,7 +374,7 @@ export default function SettingsClient({
           Securely provide your own Google Gemini API key to bypass global usage limits.
         </p>
         <p className="text-gray-500 dark:text-zinc-500 mb-6 text-xs">
-          Don't have an API key? Get one for free at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">Google AI Studio</a>.
+          Don&apos;t have an API key? Get one for free at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">Google AI Studio</a>.
         </p>
         
         {/* Preferred Provider Selection */}
@@ -543,12 +627,26 @@ export default function SettingsClient({
       <section className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">
         <h2 className="text-xl font-semibold mb-6 border-b border-gray-200 dark:border-zinc-800 pb-4">Data Export</h2>
         <p className="text-gray-600 dark:text-zinc-400 mb-4">Download a complete copy of all your tracked applications.</p>
-        <button
-          onClick={handleDownloadCSV}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-800 dark:text-zinc-200 border border-gray-300 dark:border-zinc-700 rounded-md font-medium transition-colors"
-        >
-          Download as CSV
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => handleExportData('csv')}
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-800 dark:text-zinc-200 border border-gray-300 dark:border-zinc-700 rounded-md font-medium transition-colors"
+          >
+            Export as CSV
+          </button>
+          <button
+            onClick={() => handleExportData('json')}
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-800 dark:text-zinc-200 border border-gray-300 dark:border-zinc-700 rounded-md font-medium transition-colors"
+          >
+            Export as JSON
+          </button>
+          <button
+            onClick={() => handleExportData('xlsx')}
+            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-800 dark:text-zinc-200 border border-gray-300 dark:border-zinc-700 rounded-md font-medium transition-colors"
+          >
+            Export as XLSX
+          </button>
+        </div>
       </section>
 
       {/* Danger Zone */}
