@@ -1,0 +1,1 @@
+SELECT id, email, confirmed_at, confirmation_sent_at, created_at FROM auth.users ORDER BY created_at DESC LIMIT 20;
