@@ -31,6 +31,7 @@ export default function SettingsClient({
   // AI Providers State
   const [preferredProvider, setPreferredProvider] = useState<string>(initialProfile.preferred_provider || 'google');
   const [apiKeys, setApiKeys] = useState<ApiKey[]>(initialApiKeys || []);
+  const hasGoogleKey = apiKeys.some(k => k.provider === 'google');
   const [newKeyProvider, setNewKeyProvider] = useState('google');
   const [newApiKeyValue, setNewApiKeyValue] = useState('');
   const [isSavingKey, setIsSavingKey] = useState(false);
@@ -381,17 +382,19 @@ export default function SettingsClient({
            <div className="text-sm text-gray-500">Loading models...</div>
         ) : (
           <div className="space-y-4">
+            {hasGoogleKey && (
+              <div className="p-3 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md dark:bg-blue-900/20 dark:border-blue-800/50 dark:text-blue-400">
+                BYOK Active — your own quota, not shared limits
+              </div>
+            )}
             {aiModels.map(model => {
-              const hasGoogleKey = apiKeys.some(k => k.provider === 'google');
               const isBlocked = !hasGoogleKey && model.blocked_until && new Date(model.blocked_until) > new Date();
               const isExhausted = !hasGoogleKey && model.request_count >= model.dailyLimit;
               const unavailable = isBlocked || isExhausted;
               const isPreferred = model.name === preferredModel;
               
               let statusText = `${model.request_count} / ${model.dailyLimit} used today`;
-              if (hasGoogleKey) {
-                statusText = "BYOK Active — your own quota, not shared limits";
-              } else if (isBlocked && model.blocked_until) {
+              if (isBlocked && model.blocked_until) {
                 statusText = `Blocked until ${new Date(model.blocked_until).toLocaleTimeString()}`;
               } else if (isExhausted) {
                 statusText = `Daily limit reached`;
@@ -432,19 +435,19 @@ export default function SettingsClient({
                       </label>
                       <p className="text-sm text-gray-500 dark:text-zinc-400 mt-1">{model.description}</p>
                       
-                      <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
-                        {!hasGoogleKey && (
+                      {!hasGoogleKey && (
+                        <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4">
                           <div className="flex-1 max-w-xs h-2 bg-gray-200 dark:bg-zinc-800 rounded-full overflow-hidden">
                             <div 
                               className={`h-full ${unavailable ? 'bg-red-500' : 'bg-blue-500'}`} 
                               style={{ width: `${Math.min(100, (model.request_count / model.dailyLimit) * 100)}%` }}
                             />
                           </div>
-                        )}
-                        <span className={`text-xs font-medium ${hasGoogleKey ? 'text-blue-600 dark:text-blue-400' : (unavailable ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-zinc-400')}`}>
-                          {statusText}
-                        </span>
-                      </div>
+                          <span className={`text-xs font-medium ${unavailable ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-zinc-400'}`}>
+                            {statusText}
+                          </span>
+                        </div>
+                      )}
                       
                       {isCurrentlyActiveFallback && (
                          <div className="mt-3 text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 p-2 rounded border border-amber-200 dark:border-amber-900/50">
