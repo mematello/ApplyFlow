@@ -490,7 +490,15 @@ export default function SettingsClient({
               
               let statusText = `${model.request_count} / ${model.dailyLimit} used today`;
               if (isBlocked && model.blocked_until) {
-                statusText = `Blocked until ${new Date(model.blocked_until).toLocaleTimeString()}`;
+                const blockDate = new Date(model.blocked_until);
+                const tomorrow = new Date(); 
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                
+                if (blockDate > tomorrow) {
+                  statusText = 'Model Unavailable (Deprecated)';
+                } else {
+                  statusText = `Blocked until ${blockDate.toLocaleTimeString()}`;
+                }
               } else if (isExhausted) {
                 statusText = `Daily limit reached`;
               }

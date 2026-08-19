@@ -3,6 +3,7 @@ import { Type } from '@google/genai';
 import { JobExtractionSchema } from '../../../lib/schemas/extraction';
 import { createClient } from '../../../lib/supabase/server';
 import { getAvailableModel, AllModelsExhaustedError, parseGeminiError, blockModelInDb, AI_MODELS, ParsedAiError } from '../../../lib/ai/models';
+import { sendOperatorAlert, recordExhaustionAndCheckAlert } from '../../../lib/ai/alerting';
 import { createServiceClient } from '../../../lib/supabase/serviceClient';
 import { getProvider, AiProvider } from '../../../lib/ai/provider';
 import { decrypt } from '../../../lib/utils/encryption';
@@ -211,14 +212,25 @@ Example Output:
         // there is no strict guarantee both requests resolve to the identical model under simultaneous fallback.
         // This is an intentional performance tradeoff for parallel execution speed.
         activeModelName = await getAvailableModel(user.id, excludedModels, requestedModel, hasCustomKey);
-      } catch (e: unknown) {
-        if (e instanceof AllModelsExhaustedError) {
+      } catch (error: unknown) {
+        if (error instanceof AllModelsExhaustedError) {
+          console.error('[Extract API] All models exhausted or blocked.');
+          
+          const shouldAlert = await recordExhaustionAndCheckAlert();
+          if (shouldAlert) {
+            sendOperatorAlert(
+              `Critical: All AI Models Exhausted`,
+              `<p>The fallback chain has been exhausted 3 times in the last hour.</p>
+               <p>This indicates severe quota pressure or a systemic failure across all models.</p>`
+            );
+          }
+
           return NextResponse.json({
             error: 'all_models_exhausted',
-            retryAfterSeconds: e.retryAfterSeconds
+            retryAfterSeconds: error.retryAfterSeconds
           }, { status: 429 });
         }
-        throw e;
+        throw error;
       }
 
       const executeModelCall = async (instruction: string): Promise<string> => {
@@ -306,24 +318,32 @@ Example Output:
           );
         }
 
-        if (parsedErr.isQuotaError) {
-          const blockSecs = parsedErr.retryAfterSeconds || 86400;
+        if (parsedErr.errorClass === 'TEMPORARY_PROVIDER') {
+          const blockSecs = parsedErr.retryAfterSeconds || (parsedErr.isQuotaError ? 86400 : 300);
           if (!hasCustomKey) {
             await blockModelInDb(activeModelName, blockSecs);
           }
           excludedModels.push(activeModelName);
-          console.warn(`[Extract API] Model ${activeModelName} hit quota. Trying fallback model...`);
+          console.warn(`[Extract API] Model ${activeModelName} temporary failure (${parsedErr.isQuotaError ? 'quota' : 'unavailable'}). Trying fallback model...`);
           continue;
-        } else if (parsedErr.isUnavailableError) {
-          const blockSecs = parsedErr.retryAfterSeconds || 300;
+        } else if (parsedErr.errorClass === 'PERMANENT_PROVIDER') {
+          const blockSecs = 2592000; // 30 days
           if (!hasCustomKey) {
-            await blockModelInDb(activeModelName, blockSecs);
+            const newlyBlocked = await blockModelInDb(activeModelName, blockSecs);
+            if (newlyBlocked) {
+              sendOperatorAlert(
+                `Model Deprecated: ${activeModelName}`,
+                `<p>The model <b>${activeModelName}</b> returned a permanent provider error (likely deprecation).</p>
+                 <p>It has been automatically blocked for 30 days to protect the fallback chain.</p>
+                 <p>Error details: ${parsedErr.message}</p>`
+              );
+            }
           }
           excludedModels.push(activeModelName);
-          console.warn(`[Extract API] Model ${activeModelName} unavailable (503). Trying fallback model...`);
+          console.error(`[Extract API] Model ${activeModelName} deprecated or permanent failure. Falling back... Error: ${parsedErr.message}`);
           continue;
         } else {
-          console.error("[Extract API] Extraction error:", parsedErr.message);
+          console.error("[Extract API] Extraction error (Terminal):", parsedErr.message);
           return NextResponse.json(
             {
               error: 'Failed to extract valid job data after 2 attempts.',

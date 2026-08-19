@@ -20,6 +20,7 @@ export class AllModelsExhaustedError extends Error {
 export interface ParsedAiError {
   isQuotaError: boolean;
   isUnavailableError: boolean;
+  errorClass: 'TEMPORARY_PROVIDER' | 'PERMANENT_PROVIDER' | 'TERMINAL_EXECUTION';
   statusCode: number | null;
   statusText: string | null;
   message: string;
@@ -74,9 +75,26 @@ export function parseGeminiError(e: unknown): ParsedAiError {
     retryAfterSeconds = Math.ceil(parseFloat(match[1]));
   }
 
+  let errorClass: 'TEMPORARY_PROVIDER' | 'PERMANENT_PROVIDER' | 'TERMINAL_EXECUTION' = 'TERMINAL_EXECUTION';
+  
+  if (isQuotaError || isUnavailableError) {
+    errorClass = 'TEMPORARY_PROVIDER';
+  } else if (statusCode === 404) {
+    errorClass = 'PERMANENT_PROVIDER';
+  } else if (statusCode === 400) {
+    // NOTE: This regex is a known fragility point. If Gemini's error message wording changes, 
+    // deprecation errors will silently fall through to TERMINAL_EXECUTION (fail-fast) instead of falling back.
+    if (/(model|unsupported|deprecated|not found|retired)/i.test(message)) {
+      errorClass = 'PERMANENT_PROVIDER';
+    } else {
+      errorClass = 'TERMINAL_EXECUTION';
+    }
+  }
+
   return {
     isQuotaError,
     isUnavailableError,
+    errorClass,
     statusCode,
     statusText,
     message,
@@ -84,17 +102,20 @@ export function parseGeminiError(e: unknown): ParsedAiError {
   };
 }
 
-export async function blockModelInDb(modelName: string, durationSeconds: number) {
+export async function blockModelInDb(modelName: string, durationSeconds: number): Promise<boolean> {
   try {
     const supabase = createServiceClient();
     const blockUntil = new Date();
     blockUntil.setSeconds(blockUntil.getSeconds() + durationSeconds);
-    await supabase.rpc('block_model', {
+    const { data, error } = await supabase.rpc('block_model', {
       p_model_name: modelName,
       p_blocked_until: blockUntil.toISOString()
     });
+    if (error) throw error;
+    return data === true;
   } catch (err) {
     console.error(`[AI Models] Failed to block model ${modelName}:`, err);
+    return false;
   }
 }
 
