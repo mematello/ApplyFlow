@@ -72,7 +72,7 @@ export default function LogoutButton() {
     <>
       <button
         onClick={openModal}
-        className="p-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-colors"
+        className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-colors"
         title="Log Out"
       >
         <LogOut className="w-5 h-5" />

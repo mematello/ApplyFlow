@@ -18,16 +18,16 @@ export default function Home() {
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 font-sans">
       
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto w-full">
-        <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+      <header className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6 py-4 max-w-7xl mx-auto w-full">
+        <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent w-full sm:w-auto text-center sm:text-left">
           ApplyFlow
         </div>
-        <nav className="flex items-center gap-4">
+        <nav className="flex flex-wrap justify-center sm:justify-end items-center gap-2 sm:gap-4 w-full sm:w-auto">
           <ThemeToggle />
-          <Link href="/login" className="text-sm font-medium hover:text-blue-600 transition-colors">
+          <Link href="/login" className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-sm font-medium hover:text-blue-600 transition-colors">
             Log in
           </Link>
-          <Link href="/dashboard" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
+          <Link href="/dashboard" className="px-4 py-2 min-h-[44px] flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors">
             Try without signup
           </Link>
         </nav>

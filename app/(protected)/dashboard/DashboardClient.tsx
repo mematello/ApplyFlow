@@ -158,9 +158,9 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
   return (
     <div>
       {isLocal && (
-        <div className="mb-6 p-4 bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 rounded-lg text-sm flex items-center justify-between">
+        <div className="mb-6 p-4 bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800 rounded-lg text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
           <span><strong>You are in local mode.</strong> Data is saved to this device only and will be lost if you clear your browser data.</span>
-          <Link href="/signup" className="underline font-semibold hover:text-amber-900 dark:hover:text-amber-300 ml-4 whitespace-nowrap">Sign up to cloud sync</Link>
+          <Link href="/signup" className="underline font-semibold hover:text-amber-900 dark:hover:text-amber-300 whitespace-nowrap min-h-[44px] sm:min-h-0 flex items-center">Sign up to cloud sync</Link>
         </div>
       )}
 

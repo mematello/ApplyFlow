@@ -43,23 +43,23 @@ export default async function DashboardPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 md:p-8 text-gray-900 dark:text-zinc-100">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 sm:gap-4 mb-8">
         <h1 className="text-3xl font-bold">Welcome, {firstName}!</h1>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <ThemeToggle />
           {user && (
-            <Link href="/settings" className="p-2 text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors" title="Settings">
+            <Link href="/settings" className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors" title="Settings">
               <Settings className="w-5 h-5" />
             </Link>
           )}
           {user ? (
             <LogoutButton />
           ) : (
-            <Link href="/login" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-900 dark:text-zinc-100 rounded-md font-medium transition-colors">
+            <Link href="/login" className="px-4 py-2 min-h-[44px] flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-900 dark:text-zinc-100 rounded-md font-medium transition-colors">
               Log in
             </Link>
           )}
-          <Link href="/new" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-sm">
+          <Link href="/new" className="px-4 py-2 min-h-[44px] flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors shadow-sm">
             + New Application
           </Link>
         </div>
