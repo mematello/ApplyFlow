@@ -79,3 +79,28 @@ export function screenInput(text: string): { pass: boolean; reason?: string } {
 
   return { pass: true };
 }
+
+export function screenResumeText(text: string): { pass: boolean; reason?: string } {
+  if (!text || typeof text !== 'string') {
+    return { pass: false, reason: 'Invalid input type.' };
+  }
+
+  const trimmed = text.trim();
+
+  // 1. Length Bounds
+  if (trimmed.length < 50) {
+    return { pass: false, reason: 'Resume text is too short to be valid.' };
+  }
+  if (trimmed.length > 100000) {
+    return { pass: false, reason: 'Resume text is too long to be valid.' };
+  }
+
+  // 2. Character Composition (Simple check for high garbage/binary content)
+  // Check if there is an excessive amount of repeated characters indicating a raw payload dump
+  const repeatRegex = /(.)\1{100,}/;
+  if (repeatRegex.test(trimmed)) {
+    return { pass: false, reason: 'Resume text contains unexpected data patterns.' };
+  }
+
+  return { pass: true };
+}
