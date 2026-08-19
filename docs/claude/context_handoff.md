@@ -1,10 +1,10 @@
 # ApplyFlow — Context Handoff
 
 ## Session summary
-[2-4 sentences: what this session focused on]
+Updated documentation to reflect the decision to permanently use Gmail SMTP for Supabase Auth emails, canceling plans for a custom domain and Resend SMTP integration for auth.
 
 ## Current state
-[what's implemented, what's mid-flight]
+Supabase Auth SMTP is permanently using Gmail SMTP to save costs. `/api/cron/reminders` continues to use Resend API. Monitoring will be needed for Gmail suspension risks as launch volume grows.
 
 ## Open decisions
 [anything unresolved that the new chat needs to pick up]

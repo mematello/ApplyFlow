@@ -1,5 +1,12 @@
 # ApplyFlow — Decisions Log
 
+## [2026-08-19] Auth SMTP State — Gmail SMTP Permanent
+- Context: Supabase default mailer (~2 emails/hr) was blocking testing. Previously considered temporary until a domain purchase for Resend.
+- Decision: Decided to stay on Gmail SMTP (applyflow.noreply@gmail.com, App Password auth, smtp.gmail.com:465 SSL) permanently for auth emails in exchange for zero cost. No custom domain purchase is planned.
+- Scope: Supabase Auth magic-link delivery only. /api/cron/reminders is unaffected — separate Resend API code path, untouched.
+- Trade-offs & Risks Accepted: Non-custom sender header, ~500/day volume cap, and account-suspension risk (Gmail isn't designed for automated app sending).
+- Mitigation: If the Gmail account sending is ever flagged or suspended, auth emails will fail app-wide with no automatic fallback. A monitoring and alerting plan will be necessary if launch volume grows.
+
 ## [2026-08-19] Free-Tier AI Limits
 - Context: Need to control API costs for users without their own API keys.
 - Decision: Implemented 5 lifetime free AI uses (not recurring/resettable). This is enforced server-side with a hard stop until BYOK is added, and protected by a PostgreSQL trigger preventing client-side bypass via RLS.
