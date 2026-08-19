@@ -50,6 +50,8 @@ export async function middleware(request: NextRequest) {
     url.pathname === '/' ||
     url.pathname === '/login' || 
     url.pathname === '/signup' ||
+    url.pathname === '/terms' ||
+    url.pathname === '/privacy' ||
     url.pathname === '/dashboard' ||
     url.pathname === '/new' ||
     /^\/applications\/[a-zA-Z0-9-_]+$/.test(url.pathname) ||

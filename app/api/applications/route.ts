@@ -21,6 +21,7 @@ const ApplicationInsertSchema = z.object({
   cover_letter_sent: z.boolean().default(false),
   role_fit: z.number().nullable().optional(),
   culture_fit: z.number().nullable().optional(),
+  extraction_confidence: z.any().nullable().optional(),
 });
 
 export async function POST(req: Request) {

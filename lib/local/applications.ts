@@ -15,6 +15,10 @@ export async function getApplications(): Promise<LocalApplication[]> {
     const store = transaction.objectStore(STORE_APPLICATIONS);
     const request = store.getAll();
 
+    transaction.oncomplete = () => {
+      db.close();
+    };
+
     request.onsuccess = () => {
       // Sort by date_applied desc manually as we don't have an index
       const data = request.result as LocalApplication[];

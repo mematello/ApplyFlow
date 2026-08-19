@@ -8,6 +8,8 @@ import ResumePreviewModal from "../../../components/ResumePreviewModal";
 import ResumeUploader from "../../../components/ResumeUploader";
 import { updatePreferredProvider, saveApiKey, deleteApiKey } from './actions';
 import * as xlsx from 'xlsx';
+import { getApplications } from '../../../lib/local/applications';
+import { ClearLocalDataButton } from '../../../components/ClearLocalDataButton';
 
 import { Application, Resume, Profile, AIModel, ApiKey } from '../../../lib/types';
 
@@ -125,6 +127,15 @@ export default function SettingsClient({
   const [deleteEmail, setDeleteEmail] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [hasLocalData, setHasLocalData] = useState(false);
+
+  useEffect(() => {
+    getApplications().then((apps) => {
+      setHasLocalData(apps && apps.length > 0);
+    }).catch(err => {
+      console.error("Failed to check local data:", err);
+    });
+  }, []);
 
   const isSavingProfileRef = useRef(false);
 
@@ -657,12 +668,18 @@ export default function SettingsClient({
         </p>
 
         {deleteStep === 0 && (
-          <button
-            onClick={() => setDeleteStep(1)}
-            className="px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-500 border border-red-200 dark:border-red-900/50 rounded-md font-medium transition-colors"
-          >
-            Delete Account
-          </button>
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={() => setDeleteStep(1)}
+              className="px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-500 border border-red-200 dark:border-red-900/50 rounded-md font-medium transition-colors"
+            >
+              Delete Account
+            </button>
+            
+            {hasLocalData && (
+              <ClearLocalDataButton />
+            )}
+          </div>
         )}
 
         {deleteStep === 1 && (

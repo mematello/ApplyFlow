@@ -99,6 +99,12 @@ export default function SignupPage() {
         >
           {loading ? "Sending..." : "Send Magic Link"}
         </button>
+        <div className="text-center text-xs text-gray-500 dark:text-zinc-500 mt-2">
+          By signing up, you agree to our{' '}
+          <Link href="/terms" className="underline hover:text-gray-700 dark:hover:text-zinc-300">Terms of Service</Link>
+          {' '}and{' '}
+          <Link href="/privacy" className="underline hover:text-gray-700 dark:hover:text-zinc-300">Privacy Policy</Link>.
+        </div>
       </form>
       {message && (
         <p className={`mt-4 text-center text-sm ${isError ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>

@@ -45,6 +45,7 @@ export default function NewApplicationPage() {
     culture_fit: "",
     cover_letter_sent: false,
     raw_jd: "",
+    extraction_confidence: null as unknown,
   });
   
   const isSavingRef = useRef(false);
@@ -312,6 +313,7 @@ export default function NewApplicationPage() {
           contact_info: (extracted.contact_info as string) || "",
           notes: (extracted.notes as string) || "",
           raw_jd: jobDescription,
+          extraction_confidence: extracted.extraction_confidence || null,
         };
 
         if (formattedSalary !== null) {

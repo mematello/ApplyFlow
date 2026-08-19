@@ -36,7 +36,7 @@ export default function Home() {
       <main className="flex flex-col items-center max-w-7xl mx-auto w-full px-6 pb-24">
         
         {/* Hero Section */}
-        <section className="flex flex-col items-center text-center mt-16 md:mt-24 mb-20 w-full max-w-4xl">
+        <section className="flex flex-col items-center text-center mt-6 md:mt-24 mb-20 w-full max-w-4xl">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">
             Track your job applications with AI.
           </h1>
@@ -191,7 +191,12 @@ export default function Home() {
         <Link href="/signup" className="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-lg font-medium transition-colors mb-10">
           Create your free account
         </Link>
-        <p className="text-sm text-gray-500 dark:text-zinc-500">
+        <div className="flex items-center justify-center gap-4 text-sm text-gray-500 dark:text-zinc-500 mb-4">
+          <Link href="/terms" className="hover:text-gray-900 dark:hover:text-zinc-300">Terms of Service</Link>
+          <span>&middot;</span>
+          <Link href="/privacy" className="hover:text-gray-900 dark:hover:text-zinc-300">Privacy Policy</Link>
+        </div>
+        <p className="text-sm text-gray-400 dark:text-zinc-600">
           &copy; {new Date().getFullYear()} ApplyFlow. All rights reserved.
         </p>
       </footer>
