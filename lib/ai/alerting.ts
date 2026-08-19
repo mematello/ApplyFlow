@@ -1,20 +1,21 @@
-import { Resend } from 'resend';
+import { emailTransporter, verifyEmailTransporter } from '../utils/email';
 import { createServiceClient } from '../supabase/serviceClient';
 
 export function sendOperatorAlert(subject: string, html: string) {
-  if (!process.env.ALERT_EMAIL || !process.env.RESEND_API_KEY) {
-    console.warn(`[Alerting] ALERT_EMAIL or RESEND_API_KEY not set. Suppressing alert: "${subject}"`);
+  if (!process.env.ALERT_EMAIL || !process.env.SMTP_EMAIL || !process.env.SMTP_PASSWORD) {
+    console.warn(`[Alerting] ALERT_EMAIL or SMTP credentials not set. Suppressing alert: "${subject}"`);
     return;
   }
   
-  const resend = new Resend(process.env.RESEND_API_KEY);
-
   // Fire-and-forget: we do not await this in the critical path
-  resend.emails.send({
-    from: 'ApplyFlow Alerts <onboarding@resend.dev>', // Matching the existing /api/cron/reminders identity
-    to: process.env.ALERT_EMAIL,
-    subject,
-    html
+  verifyEmailTransporter().then((isValid) => {
+    if (!isValid) return;
+    return emailTransporter.sendMail({
+      from: `"ApplyFlow Alerts" <${process.env.SMTP_EMAIL}>`,
+      to: process.env.ALERT_EMAIL,
+      subject,
+      html
+    });
   }).catch((err: unknown) => {
     console.error("[Alerting] Failed to send operator alert:", err);
   });

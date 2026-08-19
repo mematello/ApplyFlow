@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '../../../../lib/supabase/serviceClient';
-import { Resend } from 'resend';
+import { emailTransporter, verifyEmailTransporter } from '../../../../lib/utils/email';
 
 export async function GET(req: Request) {
   try {
@@ -10,12 +10,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const resendApiKey = process.env.RESEND_API_KEY || 're_dummy_123';
-    const resend = new Resend(resendApiKey);
-
     // 2. Query Supabase (using Service Role to bypass RLS and access multiple users)
     const supabase = createServiceClient();
     
+    // Verify SMTP connection before processing the batch
+    const isSmtpReady = await verifyEmailTransporter();
+    if (!isSmtpReady) {
+      return NextResponse.json({ error: 'SMTP connection failed' }, { status: 500 });
+    }
+
     // Get current date string in YYYY-MM-DD format (UTC)
     // We compare with the database date_applied which is DATE type
     const today = new Date().toISOString().split('T')[0];
@@ -68,9 +71,9 @@ export async function GET(req: Request) {
       const firstName = fullName ? fullName.split(' ')[0] : 'there';
       
       try {
-        const { data: resendData, error: resendError } = await resend.emails.send({
-          from: 'ApplyFlow Reminders <onboarding@resend.dev>',
-          to: email, // Resend free tier restricts this to the verified account email only
+        const info = await emailTransporter.sendMail({
+          from: `"ApplyFlow Reminders" <${process.env.SMTP_EMAIL || 'applyflow.noreply@gmail.com'}>`,
+          to: email,
           subject: `Reminder: ${action} with ${app.company_name}`,
           html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb; padding: 40px 20px; color: #111827;">
@@ -105,11 +108,13 @@ export async function GET(req: Request) {
         });
 
         // 4. Update the reminder_sent flag ONLY if the email was successfully sent
-        if (resendError) {
-          console.error(`Failed to send email to ${email} for app ${app.id}:`, resendError);
-          failedSends.push({ id: app.id, error: resendError });
+        // Nodemailer only populates info.rejected for soft failures per-recipient.
+        // Hard auth/connection errors are thrown directly to the catch block below.
+        if (info.rejected && info.rejected.length > 0) {
+          console.error(`Failed to send email to ${email} for app ${app.id}: rejected by server`);
+          failedSends.push({ id: app.id, error: 'Rejected by server' });
         } else {
-          console.log(`Successfully sent email to ${email} for app ${app.id} (Resend ID: ${resendData?.id})`);
+          console.log(`Successfully sent email to ${email} for app ${app.id} (MessageId: ${info.messageId})`);
           successfulSends.push(app.id);
           
           // Mark as sent
