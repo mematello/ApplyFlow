@@ -57,7 +57,7 @@ export default function OnboardingPage() {
         {step === 1 && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">What's your name?</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">What&apos;s your name?</label>
               <input
                 type="text"
                 placeholder="e.g. Jane Doe"

@@ -42,7 +42,7 @@ export default function MigratePage() {
 
         setTimeout(() => router.push("/dashboard"), 1000);
 
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Migration failed:", err);
         if (isMounted) {
           setErrorMsg("Couldn't sync your local data — it's still saved on this device, we'll retry next visit.");

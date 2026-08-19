@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Type } from '@google/genai';
 import { JobExtractionSchema } from '../../../lib/schemas/extraction';
 import { createClient } from '../../../lib/supabase/server';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { getAvailableModel, AllModelsExhaustedError, parseGeminiError, blockModelInDb, AI_MODELS, ParsedAiError } from '../../../lib/ai/models';
 import { sendOperatorAlert, recordExhaustionAndCheckAlert } from '../../../lib/ai/alerting';
 import { createServiceClient } from '../../../lib/supabase/serviceClient';
@@ -45,7 +46,7 @@ class FreeLimitExhaustedError extends Error {
   }
 }
 
-async function decrementOrThrow(serviceSupabase: any, userId: string) {
+async function decrementOrThrow(serviceSupabase: SupabaseClient, userId: string) {
   const { error } = await serviceSupabase.rpc('decrement_free_ai_uses', { p_user_id: userId });
   if (error) {
     if (error.message.includes('FREE_LIMIT_EXHAUSTED')) {

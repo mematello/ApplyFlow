@@ -34,8 +34,8 @@ export async function POST(request: Request) {
     // This will incorrectly merge legitimate re-applications (same company/role, different cycle)
     // if a prior server record exists. Acceptable for Phase 1, not solved now.
     
-    const newRecordsToInsert: any[] = [];
-    const existingRecordsToUpdate: { id: string, payload: any }[] = [];
+    const newRecordsToInsert: Record<string, unknown>[] = [];
+    const existingRecordsToUpdate: { id: string, payload: Record<string, unknown> }[] = [];
 
     for (const localApp of applications) {
       const match = serverAppsList.find(sa => 
@@ -45,14 +45,14 @@ export async function POST(request: Request) {
 
       if (match) {
         // Field-level merge: keep server record as base, fill in null/empty fields from local
-        const updatePayload: any = {};
+        const updatePayload: Record<string, unknown> = {};
         let hasUpdates = false;
 
         for (const [key, localVal] of Object.entries(localApp)) {
           // skip id, user_id, timestamps
           if (['id', 'user_id', 'created_at', 'updated_at'].includes(key)) continue;
 
-          const serverVal = (match as any)[key];
+          const serverVal = match[key as keyof Application];
           
           // If server value is null or empty string, and local value is present, use local value
           if ((serverVal === null || serverVal === '' || serverVal === undefined) && 
@@ -108,8 +108,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, inserted: newRecordsToInsert.length, updated: existingRecordsToUpdate.length }, { status: 200 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Migration error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

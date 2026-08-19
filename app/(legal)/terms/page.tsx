@@ -20,7 +20,7 @@ export default function TermsPage() {
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4">1. Acceptance of Terms</h2>
         <p>
-          By accessing and using ApplyFlow ("Service"), you accept and agree to be bound by the terms and provision of this agreement. 
+          By accessing and using ApplyFlow (&quot;Service&quot;), you accept and agree to be bound by the terms and provision of this agreement. 
           If you do not agree to abide by these terms, please do not use this Service.
         </p>
       </section>
@@ -29,7 +29,7 @@ export default function TermsPage() {
         <h2 className="text-xl font-semibold mb-4">2. Description of Service</h2>
         <p>
           ApplyFlow is an AI-powered job application tracker that allows users to extract job descriptions, analyze resume fit, and track applications.
-          The Service is provided "as is" and on an "as available" basis.
+          The Service is provided &quot;as is&quot; and on an &quot;as available&quot; basis.
         </p>
       </section>
 

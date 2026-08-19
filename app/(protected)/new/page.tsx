@@ -574,7 +574,7 @@ export default function NewApplicationPage() {
             {limitExhausted ? (
               <div className="flex items-center gap-4 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg border border-amber-200 dark:border-amber-900/50 max-w-lg">
                 <div className="text-sm text-amber-800 dark:text-amber-400">
-                  You've used all 5 of your free AI credits! To continue extracting data and matching resumes, please add your own Google Gemini API key.
+                  You&apos;ve used all 5 of your free AI credits! To continue extracting data and matching resumes, please add your own Google Gemini API key.
                 </div>
                 <Link href="/settings" className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-sm font-medium whitespace-nowrap transition-colors">
                   Go to Settings

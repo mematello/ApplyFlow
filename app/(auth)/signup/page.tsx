@@ -66,7 +66,7 @@ export default function SignupPage() {
         <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mb-6">
           <CheckCircle2 className="w-8 h-8" />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mb-3">You're logged in!</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-zinc-100 mb-3">You&apos;re logged in!</h2>
         <p className="text-gray-600 dark:text-zinc-400 mb-8">
           You successfully authenticated in another tab. You can safely close this tab or continue to your account.
         </p>
