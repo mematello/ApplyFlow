@@ -177,6 +177,7 @@ GEMINI_API_KEY=
 RESEND_API_KEY=
 CRON_SECRET=
 BYOK_ENCRYPTION_KEY=
+ALERT_EMAIL=
 ```
 
 *(Note: `BYOK_ENCRYPTION_KEY` must be a 32-byte hex string used for securely encrypting custom user API keys. You can generate one via: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)*

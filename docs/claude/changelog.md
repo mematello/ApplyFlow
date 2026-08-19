@@ -1,5 +1,11 @@
 # ApplyFlow — Changelog
 
+## [2026-08-20] (Session 6)
+- Implemented: `guard.ts` AI prompt injection defense bypass fix. Added `normalizeForScan` step to normalize unicode homoglyphs and strip zero-width characters before running the heuristic filter.
+- Implemented: Injection defense parity for `/api/match`. Integrated `screenInput` (now `screenResumeText`) and added strict XML-style delimiter isolation (`<job_data>` / `<resume_data>`) with system instructions to ignore payload commands.
+- Implemented: Fallback loop bugfix. AI provider errors are now strictly routed via a 3-way classification (`TEMPORARY_PROVIDER`, `PERMANENT_PROVIDER`, `TERMINAL_EXECUTION`), stopping deprecated models from looping infinitely and stopping malformed schemas from burning fallback quota.
+- Implemented: Operator alerting system for AI failures via Resend. Deprecation errors (`PERMANENT_PROVIDER`) immediately trigger alerts and 30-day DB blocks. Exhaustion errors trigger alerts deduplicated via a 1-hour sliding window, 3-event threshold RPC.
+
 ## [2026-08-20]
 - Implemented: Terms & Conditions, Privacy Policy pages (app/(legal)/), marked draft-pending-legal-review.
 - Implemented: Cookie consent disclosure banner (essential-only, dismiss-and-remember via localStorage), fixed-bottom-bar layout after an initial positioning bug (overlapped hero CTA, clipped button) was caught and corrected.

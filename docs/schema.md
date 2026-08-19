@@ -2,6 +2,8 @@
 
 This document is a snapshot of the actual PostgreSQL database schema as generated from the `supabase/migrations/` files.
 
+> **Note**: Migration `0014_system_alerts_and_blocks.sql` is currently pending manual execution against the live database.
+
 ## Tables
 
 ### `users`
@@ -90,6 +92,17 @@ Stores encrypted API keys for users utilizing the BYOK (Bring Your Own Key) feat
 - `created_at` (TIMESTAMPTZ, NOT NULL, Default `NOW()`)
 - **Constraints**: UNIQUE `(user_id, provider)`
 
+### `system_events`
+Stores ephemeral log records for system alerts. Features an automated 48-hour cleanup in the corresponding RPC.
+- `id` (UUID, Primary Key, Default `gen_random_uuid()`)
+- `event_type` (TEXT, NOT NULL)
+- `created_at` (TIMESTAMPTZ, NOT NULL, Default `NOW()`)
+
+### `system_alerts_state`
+State tracker for atomic locking and deduplication suppression of operator alerts. 
+- `alert_type` (TEXT, Primary Key)
+- `last_alert_sent_at` (TIMESTAMPTZ, nullable)
+
 ---
 
 ## Enums
@@ -115,6 +128,8 @@ All application tables have RLS enabled to isolate tenant data.
   - View/Upload/Update/Delete files where the first segment of the storage folder path exactly matches `auth.uid()`.
 - **`ai_model_usage`**:
   - SELECT access granted to all authenticated users (so the frontend can render which models are available). Inserts/Updates are isolated server-side via Security Definer RPC functions.
+- **`system_events` & `system_alerts_state`**:
+  - Full Deny-All access; explicitly isolated to server-side/service-role access via RPCs.
 
 ---
 
@@ -125,8 +140,10 @@ All application tables have RLS enabled to isolate tenant data.
 - **`increment_model_usage(p_model_name)` (RPC)**
   Runs with elevated privileges (SECURITY DEFINER) to upsert and increment the `request_count` for a specific AI model for the current date, avoiding race conditions.
 - **`block_model(p_model_name, p_blocked_until)` (RPC)**
-  Runs with elevated privileges (SECURITY DEFINER) to upsert and update the `blocked_until` timestamp when a model hits a 429 Quota Exceeded error.
+  Runs with elevated privileges (SECURITY DEFINER) to upsert and update the `blocked_until` timestamp when a model hits a 429 Quota Exceeded error or is deprecated. Now returns a `boolean` indicating if the block was successfully/newly applied.
 - **`decrement_free_ai_uses(p_user_id)` (RPC)**
   Runs with elevated privileges (SECURITY DEFINER) to atomically decrement `free_ai_uses_remaining` in the `profiles` table. Raises a `FREE_LIMIT_EXHAUSTED` exception if the user has 0 uses remaining to prevent negative balance race conditions.
 - **`protect_free_ai_uses` (Trigger)**
   Reverts any updates to `free_ai_uses_remaining` on the `profiles` table unless performed by the `service_role`.
+- **`record_exhaustion_event()` (RPC)**
+  Runs with elevated privileges (SECURITY DEFINER) to record an exhaustion event, purge events older than 48 hours, and utilize a `FOR UPDATE` lock on `system_alerts_state` to prevent concurrent alerts. Returns a `boolean` if the alert should fire (>= 3 events in a 1-hour rolling window).

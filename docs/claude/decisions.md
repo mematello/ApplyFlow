@@ -1,5 +1,17 @@
 # ApplyFlow — Decisions Log
 
+## [2026-08-20] Operator Alerting Dedup/Threshold Tradeoff
+- Context: Need to alert operators when all AI models fail, without causing alert spam during a true failure cascade.
+- Decision: Implemented a deduplication threshold (1-hour suppression window, 3-event threshold) backed by an atomic state lock in Postgres. Because `/api/extract` and `/api/match` fire in parallel, a single system-wide outage generates 2 events at a time. We explicitly accepted the tradeoff that this parallel structure means the 3-event threshold is reached on the *second* user attempt (4 events) rather than the third. It biases toward alerting slightly early, which is acceptable.
+
+## [2026-08-20] AI Provider Error Classification & Regex Use
+- Context: `parseGeminiError` conflated transient quota failures with permanent model deprecations and malformed request schemas. 
+- Decision: Introduced a strict 3-way classification (`TEMPORARY_PROVIDER`, `PERMANENT_PROVIDER`, `TERMINAL_EXECUTION`). Because the Gemini API does not cleanly isolate a "deprecated" error code (it returns a generic 400), we rely on a keyword regex (`/(model|unsupported|deprecated|not found|retired)/i`) for 400s to classify `PERMANENT_PROVIDER`. This is a known fragility point accepted because no better signal exists. Unrecognized 4xx/5xx codes default safely to `TERMINAL_EXECUTION`.
+
+## [2026-08-20] Permanent AI Block Duration
+- Context: Deprecated models (`PERMANENT_PROVIDER`) must be removed from the fallback chain so they stop burning request latency.
+- Decision: Set the block duration for permanently failed models to 30 days (`2592000` seconds). This is long enough to effectively auto-disable the model for the immediate future, giving operators ample time to push a code update removing it from `models.ts` without needing an emergency hotfix.
+
 ## [2026-08-20] Cookie Consent Scope
 - Context: Need to add a cookie consent banner for compliance.
 - Decision: Implemented an essential-only disclosure banner (no accept/reject toggle) because an audit confirmed there is zero analytics/tracking code in the codebase.
