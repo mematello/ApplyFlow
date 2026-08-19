@@ -1,5 +1,17 @@
 # ApplyFlow — Decisions Log
 
+## [2026-08-20] Cookie Consent Scope
+- Context: Need to add a cookie consent banner for compliance.
+- Decision: Implemented an essential-only disclosure banner (no accept/reject toggle) because an audit confirmed there is zero analytics/tracking code in the codebase.
+
+## [2026-08-20] extraction_confidence Schema Handling
+- Context: `extraction_confidence` needed to be added to validate low-confidence soft-rejections.
+- Decision: Added to `JobExtractionSchema` and the DB insert schema independently, preserving the existing AI Extraction Schema Decoupling decision to prevent tight coupling.
+
+## [2026-08-20] Free-Tier Race Condition Fix
+- Context: The `decrement_free_ai_uses` logic was vulnerable to race conditions under concurrent requests, allowing negative balances.
+- Decision: Fixed via an atomic check-and-decrement RPC (`0013_atomic_decrement.sql`) and a route-level `decrementOrThrow` helper rather than application-level locking. Decrement only fires post-success to preserve the multi-model fallback resiliency guarantee.
+
 ## [2026-08-19] Auth SMTP State — Gmail SMTP Permanent
 - Context: Supabase default mailer (~2 emails/hr) was blocking testing. Previously considered temporary until a domain purchase for Resend.
 - Decision: Decided to stay on Gmail SMTP (applyflow.noreply@gmail.com, App Password auth, smtp.gmail.com:465 SSL) permanently for auth emails in exchange for zero cost. No custom domain purchase is planned.

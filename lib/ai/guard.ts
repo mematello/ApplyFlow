@@ -1,3 +1,32 @@
+function normalizeForScan(text: string): string {
+  // 1. Strip zero-width characters (Zero Width Space, Non-Joiner, Joiner, BOM)
+  let normalized = text.replace(/[\u200B-\u200D\uFEFF]/g, '');
+
+  // 2. Collapse all unicode whitespace (including U+00A0, U+2000-200A) to standard space
+  normalized = normalized.replace(/\s+/g, ' ');
+
+  // 3. NFKC Normalization
+  normalized = normalized.normalize('NFKC');
+
+  // 4. Strip combining diacritical marks (by decomposing the NFKC output first)
+  normalized = normalized.normalize('NFD').replace(/[\u0300-\u036F]/g, '');
+
+  // 5. Homoglyph mapping (Cyrillic and Greek look-alikes to Latin)
+  const homoglyphMap: Record<string, string> = {
+    'А': 'A', 'В': 'B', 'Е': 'E', 'К': 'K', 'М': 'M', 'Н': 'H', 'О': 'O',
+    'Р': 'P', 'С': 'C', 'Т': 'T', 'Х': 'X', 'а': 'a', 'е': 'e', 'о': 'o',
+    'р': 'p', 'с': 'c', 'у': 'y', 'х': 'x', 'і': 'i', 'ј': 'j', 'І': 'I',
+    'Ј': 'J', 'ο': 'o', 'ν': 'v', 'Α': 'A', 'Β': 'B', 'Ε': 'E', 'Ζ': 'Z',
+    'Η': 'H', 'Ι': 'I', 'Κ': 'K', 'Μ': 'M', 'Ν': 'N', 'Ο': 'O', 'Ρ': 'P',
+    'Τ': 'T', 'Υ': 'Y', 'Χ': 'X'
+  };
+
+  normalized = normalized.split('').map(c => homoglyphMap[c] ?? c).join('');
+
+  // 6. Lowercase
+  return normalized.toLowerCase();
+}
+
 export function screenInput(text: string): { pass: boolean; reason?: string } {
   if (!text || typeof text !== 'string') {
     return { pass: false, reason: 'Invalid input type.' };
@@ -14,7 +43,7 @@ export function screenInput(text: string): { pass: boolean; reason?: string } {
   }
 
   // 2. Injection Pattern Scan
-  const lowerText = trimmed.toLowerCase();
+  const scannedText = normalizeForScan(trimmed);
   const injectionPatterns = [
     "ignore previous instructions",
     "ignore previous directions",
@@ -32,7 +61,7 @@ export function screenInput(text: string): { pass: boolean; reason?: string } {
   ];
 
   for (const pattern of injectionPatterns) {
-    if (lowerText.includes(pattern)) {
+    if (scannedText.includes(pattern)) {
       return { pass: false, reason: 'Doesn\'t look like a valid job description.' };
     }
   }

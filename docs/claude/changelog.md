@@ -1,5 +1,13 @@
 # ApplyFlow — Changelog
 
+## [2026-08-20]
+- Implemented: Terms & Conditions, Privacy Policy pages (app/(legal)/), marked draft-pending-legal-review.
+- Implemented: Cookie consent disclosure banner (essential-only, dismiss-and-remember via localStorage), fixed-bottom-bar layout after an initial positioning bug (overlapped hero CTA, clipped button) was caught and corrected.
+- Implemented: Clear Local Data button in Settings (IndexedDB wipe, confirmation-gated, hidden during active migration/when no local data exists). Includes a database-connection-closing fix in lib/local/applications.ts that was blocking indexedDB.deleteDatabase.
+- Implemented: /api/extract input validation + prompt-injection defense — new lib/ai/guard.ts (heuristic pre-filter), <job_data> delimiter + isolation system instructions, extraction_confidence-based low-confidence soft-rejection. extraction_confidence added to JobExtractionSchema and independently to ApplicationInsertSchema (no extend()/pick() coupling).
+- Fixed: decrement_free_ai_uses race condition allowing negative free-use balance under concurrent requests — atomic check-and-decrement RPC (migration 0013_atomic_decrement.sql) + route-level decrementOrThrow helper in app/api/extract/route.ts, fallback-loop-safe (decrements only on successful parse per attempt, not before the loop).
+- Note: Pre-launch security pass completed (Phases A-D). Two findings deferred to next session: /api/extract unicode homoglyph bypass on guard.ts's heuristic scan, and /api/match has no equivalent injection defense (relies on /api/extract for billing but has zero input guarding of its own).
+
 ## [2026-08-19]
 - Implemented: Anonymous local tracking via IndexedDB with migration-to-Supabase upon signup.
 - Implemented: Auth UX improvements (cross-tab magic link detection, back-to-landing link).

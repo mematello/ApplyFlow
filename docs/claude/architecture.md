@@ -5,6 +5,7 @@
 app/
   (auth)/               → Login, signup, and shared auth layout
   (protected)/          → Authenticated dashboard, new application flow, and settings
+  (legal)/              → Static legal pages (Terms & Conditions, Privacy Policy)
   api/
     extract/            → AI job-description extraction endpoint
     match/              → AI resume-fit analysis endpoint
@@ -17,6 +18,7 @@ components/
   ResumeUploader.tsx    → Shared component for resume uploads (used in Settings and Onboarding)
 lib/
   ai/models.ts          → Model selection, fallback, and error-parsing logic
+  ai/guard.ts           → Pre-filter heuristic scanning for AI prompt injection defense
   supabase/             → Browser / server / service-role Supabase clients
   local/                → IndexedDB adapters (`db.ts`, `applications.ts`) for local-mode
   data-source.ts        → Data abstraction layer routing between Supabase and IndexedDB
@@ -41,7 +43,7 @@ docs/
 - **AI Calls**: API requests to Gemini are resilient; they use a multi-model fallback chain to avoid failure on 429/503 errors and persist temporary model blocks in Postgres. 
 - **Settings & BYOK**: The `app/(protected)/settings/` page includes an "AI Providers & BYOK" section scoped to Google Gemini only, allowing users to override global limits securely.
 - **Theme**: Dark mode is implemented via `next-themes` (system default + manual toggle).
-- **Data Export**: The Settings page fetches application data and joins `interview_stages` (`settings/page.tsx`). The export feature processes this locally to export multi-format tracking data (CSV, JSON, XLSX using the `xlsx`/SheetJS dependency), handling column alignment and timeline flattening without compromising the main application DB shape.
+- **Data Export & Privacy Controls**: The Settings page fetches application data and joins `interview_stages` (`settings/page.tsx`). The export feature processes this locally to export multi-format tracking data (CSV, JSON, XLSX using the `xlsx`/SheetJS dependency), handling column alignment and timeline flattening without compromising the main application DB shape. Settings also exposes a 'Clear Local Data' control as the explicitly disclosed mechanism for local IndexedDB wipe requests.
 - **Auth Email Delivery**: Authentication emails are delivered via Gmail SMTP through Supabase custom SMTP (applyflow.noreply@gmail.com). This is a permanent solution; Resend is used solely for the `/api/cron/reminders` endpoint.
 
 ## Known constraints
