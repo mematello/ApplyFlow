@@ -1,5 +1,11 @@
 # ApplyFlow — Decisions Log
 
+## [2026-08-20] Resend to Nodemailer/Gmail SMTP Migration
+- Context: We were using Resend for cron reminders and operator alerts, and Supabase's custom SMTP (via Gmail) for auth.
+- Decision: Completely removed Resend and migrated all system emails (auth, cron reminders, operator alerts) to a shared Nodemailer transporter using Gmail SMTP (`applyflow.noreply@gmail.com`).
+- Trade-offs & Risks Accepted: This creates a consolidated single point of failure. All communications now depend on one personal Gmail account with no custom domain, a ~500/day volume ceiling, and a risk of suspension (Gmail is not designed for automated app sending) with no fallback.
+- Mitigation: A deliverability spot-check via Mail-Tester scored 9.5/10 (SPF/DKIM passing), but this was a single-point-in-time test and does not constitute ongoing monitoring. This risk is acknowledged and accepted for the current scale.
+
 ## [2026-08-20] Operator Alerting Dedup/Threshold Tradeoff
 - Context: Need to alert operators when all AI models fail, without causing alert spam during a true failure cascade.
 - Decision: Implemented a deduplication threshold (1-hour suppression window, 3-event threshold) backed by an atomic state lock in Postgres. Because `/api/extract` and `/api/match` fire in parallel, a single system-wide outage generates 2 events at a time. We explicitly accepted the tradeoff that this parallel structure means the 3-event threshold is reached on the *second* user attempt (4 events) rather than the third. It biases toward alerting slightly early, which is acceptable.

@@ -28,6 +28,7 @@ Built to solve a real problem from my own job search: manually re-typing job pos
 *   Tailwind CSS v4
 *   next-themes (dark/light mode)
 *   Lucide React (icons)
+*   Vercel Analytics & Speed Insights (mounted in root layout)
 
 **Backend**
 *   Next.js API routes (`/api/*`)
@@ -43,8 +44,8 @@ Built to solve a real problem from my own job search: manually re-typing job pos
 *   `pdf-parse` and `mammoth` for extracting text from uploaded resumes (PDF/DOCX)
 
 **Notifications & Auth**
-*   Auth magic links are delivered permanently via Gmail SMTP (accepting a ~500/day volume cap and automated sending risks in exchange for zero cost; no custom domain required).
-*   Resend is used exclusively by a scheduled cron route to send follow-up reminder emails.
+*   Auth magic links, scheduled cron reminders (`/api/cron/reminders`), and operator alerts are all delivered permanently via Gmail SMTP (`applyflow.noreply@gmail.com`). 
+*   This accepts a ~500/day volume cap and automated sending risks in exchange for zero cost and no custom domain requirements. Resend is no longer used.
 
 ## Architecture
 
@@ -69,7 +70,7 @@ graph TD
         SupabaseAuth["Supabase Auth"]
         SupabaseStorage["Supabase Storage<br/><i>Resume Files</i>"]
         Gemini["Google Gemini API<br/><i>3.5-Flash / 3-Flash</i>"]
-        Resend["Resend API<br/><i>Email Reminders</i>"]
+        GmailSMTP["Gmail SMTP<br/><i>System Emails</i>"]
     end
 
     UI -->|HTTPS Requests| MW
@@ -87,7 +88,8 @@ graph TD
     UI -->|Upload Resumes| SupabaseStorage
     
     CronRoute -->|Query Due Reminders| SupabaseDB
-    CronRoute -->|Send Email| Resend
+    CronRoute -->|Send Email| GmailSMTP
+    AILib -->|Operator Alerts| GmailSMTP
 ```
 
 ### Directory Structure
@@ -102,6 +104,8 @@ app/
     cron/reminders/     → scheduled follow-up email job
     account/delete/     → account deletion and storage cleanup
 lib/
+  utils/
+    email.ts            → shared Nodemailer transporter
   ai/models.ts          → model selection, fallback, and error-parsing logic
   supabase/             → browser / server / service-role Supabase clients
 supabase/
@@ -156,6 +160,8 @@ sequenceDiagram
 | `resumes` | Uploaded resume metadata + extracted text (files live in Supabase Storage) |
 | `ai_model_usage` | Tracks daily request counts and temporary blocks per Gemini model |
 | `user_api_keys` | Encrypted user-provided API keys for BYOK |
+| `system_events` | Stores ephemeral log records for system alerts |
+| `system_alerts_state` | State tracker for atomic locking and deduplication suppression of operator alerts |
 
 All tables are protected by Row Level Security — users can only read/write their own data.
 
@@ -174,7 +180,8 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 GEMINI_API_KEY=
-RESEND_API_KEY=
+SMTP_EMAIL=
+SMTP_PASSWORD=
 CRON_SECRET=
 BYOK_ENCRYPTION_KEY=
 ALERT_EMAIL=
@@ -194,6 +201,9 @@ npm run dev
 *   **Resilient AI calls:** rather than letting a single Gemini outage break the extraction flow, the app maintains an ordered fallback list of models, persists temporary blocks to the database (shared across concurrent requests), and returns clean, user-facing error messages instead of raw provider errors.
 *   **Parallel AI execution:** extraction and resume matching don't depend on each other, so both requests fire concurrently and resolve to the same model where possible — cutting perceived wait time roughly in half.
 *   **Defense-in-depth data scoping:** Row Level Security (RLS) is enforced strictly at the database layer (scoping all access to `auth.uid()`), while server-side API routes explicitly re-scope user queries as a secondary defense layer against accidental cross-tenant data leaks.
+*   **Prompt injection defense:** robust input sanitization via `guard.ts` (normalizing unicode homoglyphs and zero-width characters) combined with strict XML-style delimiter isolation for both extraction and matching routes.
+*   **AI error classification:** provider errors are strictly routed through a 3-way classification (`TEMPORARY_PROVIDER`, `PERMANENT_PROVIDER`, `TERMINAL_EXECUTION`), solving silent-outage fallback bugs and preventing deprecated models from looping infinitely.
+*   **Operator alerting:** an automated system pages operators via Gmail SMTP (deduplicated through a 1-hour sliding window and 3-event threshold RPC) when AI models are deprecated or the fallback chain is exhausted. (Resend was dropped in favor of a shared Nodemailer setup).
 
 ## Roadmap
 
@@ -201,6 +211,7 @@ npm run dev
 *   [ ] Resume versioning tied to specific applications
 *   [ ] Analytics view (response rates, interview conversion, common tech stack requests)
 *   [ ] Browser extension for one-click capture from job boards
+*   [ ] JD URL-fetching (automatically scrape job postings from a URL)
 
 ## License
 

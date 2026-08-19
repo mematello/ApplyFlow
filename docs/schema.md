@@ -2,8 +2,6 @@
 
 This document is a snapshot of the actual PostgreSQL database schema as generated from the `supabase/migrations/` files.
 
-> **Note**: Migration `0014_system_alerts_and_blocks.sql` is currently pending manual execution against the live database.
-
 ## Tables
 
 ### `users`

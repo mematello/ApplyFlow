@@ -17,6 +17,8 @@ components/
   ThemeToggle.tsx       → Dark/light mode toggle
   ResumeUploader.tsx    → Shared component for resume uploads (used in Settings and Onboarding)
 lib/
+  utils/
+    email.ts            → Shared Nodemailer transporter (lazy-verified) for all system emails
   ai/models.ts          → Model selection, fallback, and error-parsing logic
   ai/guard.ts           → Pre-filter heuristic scanning for AI prompt injection defense
   ai/alerting.ts        → Operator alerting for AI model exhaustion and deprecation
@@ -48,11 +50,12 @@ docs/
   - `PERMANENT_PROVIDER`: Deprecation or model retirement (404, or 400 with specific keywords). Fails fast, permanently blocks the model for 30 days, and triggers an operator alert.
   - `TERMINAL_EXECUTION`: Malformed requests or schema failures. Fails fast immediately without burning downstream model quota.
 - **Billing Relationship**: The `/api/match` route depends entirely on `/api/extract` for billing enforcement and free-tier decrementing. Since they fire in parallel, `/api/extract` acts as the billing gatekeeper; `/api/match` checks quota but does not deduct from it.
-- **Operator Alerting**: The system actively pages operators via email (using Resend) on critical AI failures. Alerts are triggered on model deprecation (`PERMANENT_PROVIDER`) and fallback chain exhaustion. Exhaustion alerts are deduplicated via a 1-hour sliding window suppressing duplicates, governed by a `record_exhaustion_event` RPC that locks a state row and trips at a >= 3 event threshold.
+- **Operator Alerting**: The system actively pages operators via email (using Nodemailer/Gmail SMTP via `lib/utils/email.ts`) on critical AI failures. Alerts are triggered on model deprecation (`PERMANENT_PROVIDER`) and fallback chain exhaustion. Exhaustion alerts are deduplicated via a 1-hour sliding window suppressing duplicates, governed by a `record_exhaustion_event` RPC that locks a state row and trips at a >= 3 event threshold. The SMTP connection is "lazy-verified" (no handshake on import) to ensure `/api/extract` and `/api/match` don't pick up an implicit network dependency just by importing `alerting.ts`.
 - **Settings & BYOK**: The `app/(protected)/settings/` page includes an "AI Providers & BYOK" section scoped to Google Gemini only, allowing users to override global limits securely.
 - **Theme**: Dark mode is implemented via `next-themes` (system default + manual toggle).
 - **Data Export & Privacy Controls**: Settings exposes a CSV/JSON/XLSX export and a 'Clear Local Data' IndexedDB wipe.
-- **Auth Email Delivery**: Authentication emails are delivered via Gmail SMTP through Supabase custom SMTP (applyflow.noreply@gmail.com). Resend is used solely for the `/api/cron/reminders` endpoint and operator alerts.
+- **Auth & System Email Delivery**: Authentication emails, scheduled follow-up reminders (`/api/cron/reminders`), and operator alerts are all delivered via Gmail SMTP (`applyflow.noreply@gmail.com`). Resend has been completely removed to consolidate around a single email infrastructure.
+- **Analytics & Performance**: Vercel Analytics and Speed Insights are mounted once at the root layout level (`app/layout.tsx`) to track traffic and web vitals across the application.
 
 ## Known constraints
 - **Gemini Rate Limits**: Requests can hit quota limits (`429`) or demand limits (`503`), necessitating the multi-model fallback design.
