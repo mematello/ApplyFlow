@@ -37,6 +37,23 @@ const geminiSchema = {
   required: ['company_name', 'role', 'tech_stack', 'extraction_confidence'],
 };
 
+class FreeLimitExhaustedError extends Error {
+  constructor() {
+    super('FREE_LIMIT_EXHAUSTED');
+    this.name = 'FreeLimitExhaustedError';
+  }
+}
+
+async function decrementOrThrow(serviceSupabase: any, userId: string) {
+  const { error } = await serviceSupabase.rpc('decrement_free_ai_uses', { p_user_id: userId });
+  if (error) {
+    if (error.message.includes('FREE_LIMIT_EXHAUSTED')) {
+      throw new FreeLimitExhaustedError();
+    }
+    throw new Error(error.message);
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -229,7 +246,15 @@ Example Output:
           const validated = parseAndValidate(rawJsonText);
           
           if (!hasCustomKey) {
-            await serviceSupabase.rpc('decrement_free_ai_uses', { p_user_id: user.id });
+            try {
+              await decrementOrThrow(serviceSupabase, user.id);
+            } catch (decErr) {
+              if (decErr instanceof FreeLimitExhaustedError) {
+                return NextResponse.json({ error: 'FREE_LIMIT_EXHAUSTED' }, { status: 403 });
+              }
+              console.error("[Extract API] DB error during decrement:", decErr);
+              return NextResponse.json({ error: 'Internal server error while tracking usage.' }, { status: 500 });
+            }
           }
 
           if (validated.extraction_confidence?.company_name === 'low' || validated.extraction_confidence?.role === 'low') {
@@ -250,7 +275,15 @@ Example Output:
           const validated = parseAndValidate(rawJsonText);
           
           if (!hasCustomKey) {
-            await serviceSupabase.rpc('decrement_free_ai_uses', { p_user_id: user.id });
+            try {
+              await decrementOrThrow(serviceSupabase, user.id);
+            } catch (decErr) {
+              if (decErr instanceof FreeLimitExhaustedError) {
+                return NextResponse.json({ error: 'FREE_LIMIT_EXHAUSTED' }, { status: 403 });
+              }
+              console.error("[Extract API] DB error during decrement:", decErr);
+              return NextResponse.json({ error: 'Internal server error while tracking usage.' }, { status: 500 });
+            }
           }
 
           if (validated.extraction_confidence?.company_name === 'low' || validated.extraction_confidence?.role === 'low') {

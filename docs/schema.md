@@ -127,6 +127,6 @@ All application tables have RLS enabled to isolate tenant data.
 - **`block_model(p_model_name, p_blocked_until)` (RPC)**
   Runs with elevated privileges (SECURITY DEFINER) to upsert and update the `blocked_until` timestamp when a model hits a 429 Quota Exceeded error.
 - **`decrement_free_ai_uses(p_user_id)` (RPC)**
-  Runs with elevated privileges (SECURITY DEFINER) to atomically decrement `free_ai_uses_remaining` in the `profiles` table.
+  Runs with elevated privileges (SECURITY DEFINER) to atomically decrement `free_ai_uses_remaining` in the `profiles` table. Raises a `FREE_LIMIT_EXHAUSTED` exception if the user has 0 uses remaining to prevent negative balance race conditions.
 - **`protect_free_ai_uses` (Trigger)**
   Reverts any updates to `free_ai_uses_remaining` on the `profiles` table unless performed by the `service_role`.
