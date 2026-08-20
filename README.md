@@ -1,5 +1,7 @@
 # ApplyFlow
 
+**Try it live:** [https://mkro-applyflow.vercel.app](https://mkro-applyflow.vercel.app)
+
 AI-powered job application tracker that turns a pasted job posting into a structured, trackable application — complete with an AI-generated fit assessment against your resume.
 
 Built to solve a real problem from my own job search: manually re-typing job postings into a spreadsheet, then guessing whether a role is actually worth applying to, is tedious and error-prone. ApplyFlow automates both.
