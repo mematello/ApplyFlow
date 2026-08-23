@@ -35,6 +35,14 @@ export async function POST(request: Request) {
     let extractedText = null;
     try {
       if (ext === 'pdf') {
+        if (typeof (globalThis as unknown as Record<string, unknown>).DOMMatrix === 'undefined') {
+          const canvas = await import('@napi-rs/canvas');
+          Object.assign(globalThis, {
+            DOMMatrix: canvas.DOMMatrix,
+            ImageData: canvas.ImageData,
+            Path2D: canvas.Path2D
+          });
+        }
         const { PDFParse } = await import('pdf-parse');
         const parser = new PDFParse({ data: buffer });
         const data = await parser.getText();

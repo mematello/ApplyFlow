@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/genai": "^2.11.0",
+    "@napi-rs/canvas": "^1.0.7",
     "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.6",
     "@vercel/analytics": "^2.0.1",

@@ -56,8 +56,7 @@ export async function middleware(request: NextRequest) {
     url.pathname === '/new' ||
     /^\/applications\/[a-zA-Z0-9-_]+$/.test(url.pathname) ||
     url.pathname.startsWith('/auth/callback') ||
-    url.pathname.startsWith('/api/cron') ||
-    url.pathname.startsWith('/api/resumes');
+    url.pathname.startsWith('/api/cron');
 
   if (!user && !isPublicRoute) {
     // If the user is unauthenticated and tries to access an API route, return 401
