@@ -1,5 +1,13 @@
 # ApplyFlow — Decisions Log
 
+## [2026-08-23] PDF Extraction Vercel Serverless Architecture Fixes
+- Context: Resume extraction failed in production with "Cannot find module" and then "DOMMatrix is not defined".
+- Root cause #1: `execSync`-based subprocess extraction wasn't traceable by Vercel's Node File Trace, causing `Cannot find module` in production. 
+- Fix: refactored to direct `await import('pdf-parse')` inside the route handler.
+- Root cause #2: `pdf-parse@2.x`'s underlying `pdfjs-dist` dependency requires browser-standard canvas APIs (`DOMMatrix`, `ImageData`, `Path2D`) even for text-only extraction, which don't exist in Node's serverless runtime. 
+- Fix: added `@napi-rs/canvas` and injected polyfills into `globalThis` before the `pdf-parse` import, plus `serverExternalPackages` and `outputFileTracingIncludes` config in `next.config.ts`.
+- Trade-off/accepted risk: injecting `DOMMatrix`/`ImageData`/`Path2D` into `globalThis` persists for the lifetime of a warm Lambda container, meaning it affects all subsequent requests on that container, not just PDF extraction ones. Accepted risk: low likelihood, but if any other dependency uses `typeof DOMMatrix !== 'undefined'` as a browser-vs-server detection heuristic, this could cause it to misbehave. Not currently known to affect anything in this codebase; flagged for awareness if unexplained behavior ever surfaces elsewhere. Note that Option B (scoped canvasFactory injection instead of global mutation, avoiding this risk) was not pursued due to time — flag as a possible future hardening item, not urgent.
+
 ## [2026-08-20] Resend to Nodemailer/Gmail SMTP Migration
 - Context: We were using Resend for cron reminders and operator alerts, and Supabase's custom SMTP (via Gmail) for auth.
 - Decision: Completely removed Resend and migrated all system emails (auth, cron reminders, operator alerts) to a shared Nodemailer transporter using Gmail SMTP (`applyflow.noreply@gmail.com`).

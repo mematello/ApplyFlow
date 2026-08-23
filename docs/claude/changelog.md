@@ -1,5 +1,10 @@
 # ApplyFlow — Changelog
 
+## [2026-08-23]
+- Fixed: PDF resume text extraction failing in production (subprocess bundling failure — execSync-invoked script wasn't included in the Vercel serverless bundle).
+- Fixed: Follow-up production failure after the above fix (pdfjs-dist canvas API dependency missing in Node serverless runtime) — resolved via @napi-rs/canvas + globalThis polyfill injection.
+- Note both were only reproducible in the deployed Vercel environment, not local dev/build — worth remembering for future serverless-specific debugging.
+
 ## [2026-08-20] (Session 6)
 - Implemented: `guard.ts` AI prompt injection defense bypass fix. Added `normalizeForScan` step to normalize unicode homoglyphs and strip zero-width characters before running the heuristic filter.
 - Implemented: Injection defense parity for `/api/match`. Integrated `screenInput` (now `screenResumeText`) and added strict XML-style delimiter isolation (`<job_data>` / `<resume_data>`) with system instructions to ignore payload commands.
