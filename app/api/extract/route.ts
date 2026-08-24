@@ -100,39 +100,39 @@ export async function POST(req: Request) {
     const preferredProvider = profile?.preferred_provider;
     const freeAiUses = profile?.free_ai_uses_remaining ?? 0;
 
-    // 2. Look for custom key if preferred_provider is set
-    if (preferredProvider) {
-      const { data: keyData } = await supabase
-        .from('user_api_keys')
-        .select('encrypted_key, iv, auth_tag')
-        .eq('user_id', user.id)
-        .eq('provider', preferredProvider)
-        .single();
+    // 2. Look for custom key based on preferred_provider or default to 'google'
+    const targetProvider = preferredProvider || 'google';
 
-      if (keyData) {
-        let decryptedKey: string | null = null;
+    const { data: keyData } = await supabase
+      .from('user_api_keys')
+      .select('encrypted_key, iv, auth_tag')
+      .eq('user_id', user.id)
+      .eq('provider', targetProvider)
+      .single();
+
+    if (keyData) {
+      let decryptedKey: string | null = null;
+      try {
+        decryptedKey = decrypt({
+          encryptedKey: keyData.encrypted_key,
+          iv: keyData.iv,
+          authTag: keyData.auth_tag
+        });
+      } catch (decryptErr) {
+        console.error(`[Extract API] Decryption failed for user ${user.id}:`, decryptErr);
+        return NextResponse.json(
+          { error: 'Decryption failed. Your API key could not be read. Please re-enter your key in your profile.' },
+          { status: 401 }
+        );
+      }
+
+      if (decryptedKey) {
         try {
-          decryptedKey = decrypt({
-            encryptedKey: keyData.encrypted_key,
-            iv: keyData.iv,
-            authTag: keyData.auth_tag
-          });
-        } catch (decryptErr) {
-          console.error(`[Extract API] Decryption failed for user ${user.id}:`, decryptErr);
-          return NextResponse.json(
-            { error: 'Decryption failed. Your API key could not be read. Please re-enter your key in your profile.' },
-            { status: 401 }
-          );
-        }
-
-        if (decryptedKey) {
-          try {
-            aiProvider = getProvider(preferredProvider, decryptedKey);
-            hasCustomKey = true;
-          } catch (providerErr) {
-            console.error(`[Extract API] Provider instantiation failed for ${preferredProvider}:`, providerErr);
-            // Fall back to server key by leaving hasCustomKey = false
-          }
+          aiProvider = getProvider(targetProvider, decryptedKey);
+          hasCustomKey = true;
+        } catch (providerErr) {
+          console.error(`[Extract API] Provider instantiation failed for ${targetProvider}:`, providerErr);
+          // Fall back to server key by leaving hasCustomKey = false
         }
       }
     }

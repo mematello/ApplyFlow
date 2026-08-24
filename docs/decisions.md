@@ -1,5 +1,8 @@
 # ApplyFlow — Decisions Log
 
+## [2026-08-24] BYOK Default Provider Fallback
+- Context: `profiles.preferred_provider` was acting as a hard gate for checking `user_api_keys`, causing users with a saved key but a null preferred provider to be blocked by the free-tier limit.
+- Decision: Decoupled the key check by querying `user_api_keys` for `preferred_provider || 'google'`. We default to 'google' when null rather than querying across all providers. This avoids multi-provider complexity and is safe because BYOK is currently locked to Gemini-only.
 ## [2026-08-23] PDF Extraction Vercel Serverless Architecture Fixes
 - Context: Resume extraction failed in production with "Cannot find module" and then "DOMMatrix is not defined".
 - Root cause #1: `execSync`-based subprocess extraction wasn't traceable by Vercel's Node File Trace, causing `Cannot find module` in production. 

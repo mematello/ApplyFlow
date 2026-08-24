@@ -1,6 +1,7 @@
 # ApplyFlow — Changelog
 
 ## [2026-08-24] (Session 8)
+- Fixed: BYOK (Bring Your Own Key) bug in `/api/extract` and `/api/match` where custom keys were ignored and triggered the `FREE_LIMIT_EXHAUSTED` (403) error if `profiles.preferred_provider` was null. Fixed by decoupling key lookup and defaulting to 'google'.
 - Implemented: Initial production deployment to Vercel.
 - Fixed: `vercel.json` UTF-16/BOM encoding bug causing parsing errors in production.
 - Fixed: ESLint build-blocking errors (`react/no-unescaped-entities`, `@typescript-eslint/no-explicit-any`).
