@@ -1,5 +1,12 @@
 # ApplyFlow — Changelog
 
+## [2026-08-24] (Session 8)
+- Implemented: Initial production deployment to Vercel.
+- Fixed: `vercel.json` UTF-16/BOM encoding bug causing parsing errors in production.
+- Fixed: ESLint build-blocking errors (`react/no-unescaped-entities`, `@typescript-eslint/no-explicit-any`).
+- Fixed: Supabase magic-link redirect misconfiguration (missing `https://` and `/**` wildcard).
+- Note: PDF resume text extraction fixes were merged and deployed to production, but have not yet been confirmed working on the live production environment.
+
 ## [2026-08-23]
 - Fixed: PDF resume text extraction failing in production (subprocess bundling failure — execSync-invoked script wasn't included in the Vercel serverless bundle).
 - Fixed: Follow-up production failure after the above fix (pdfjs-dist canvas API dependency missing in Node serverless runtime) — resolved via @napi-rs/canvas + globalThis polyfill injection.
