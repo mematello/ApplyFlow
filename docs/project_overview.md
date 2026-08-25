@@ -16,7 +16,7 @@ Job seekers who want to streamline tracking their applications, avoid manually r
 - **Frontend:** Next.js 15 (App Router), React 19, Tailwind CSS v4
 - **Backend:** Next.js API Routes, Supabase (PostgreSQL, Auth, Storage)
 - **AI:** Google Gemini API (Multi-model fallback chain)
-- **Notifications:** Resend API for email reminders
+- **Notifications:** Gmail SMTP/nodemailer for email reminders
 
 ## Non-goals
 - Automating the actual submission of applications on company portals (ApplyFlow is strictly for tracking and assessment).

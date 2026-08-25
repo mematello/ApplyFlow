@@ -7,7 +7,7 @@ decisions.md instead. Replaces the handoff_context_sessionN.md chain.
 See architecture.md / decisions.md / schema.md / changelog.md for
 anything not called out below as recently changed.*
 
-*Last updated: 2026-08-24 (Session 8)*
+*Last updated: 2026-08-25 (Session 9)*
 
 ## 1. Confirmed working / shipped
 
@@ -25,31 +25,20 @@ anything not called out below as recently changed.*
 - Supabase magic-link redirect misconfiguration (missing `https://` and
   `/**` wildcard, production + a preview branch) — fixed, confirmed via
   live login test.
-- PDF resume extraction — fixed, confirmed on **preview** deployment via
-  real authenticated upload. Two sequential production-only root causes
+- PDF resume extraction now confirmed on live production via real authenticated upload. Two sequential production-only root causes
   resolved: (1) `execSync` subprocess extraction invisible to Vercel's
   bundler → refactored to direct `await import('pdf-parse')`; (2)
   `pdfjs-dist` canvas API dependency missing in Node serverless → fixed
   via `@napi-rs/canvas` + `globalThis` polyfill, `serverExternalPackages`,
-  `outputFileTracingIncludes`. Merged and deployed to production —
-  **not yet confirmed on production itself**, see Open/Blocking.
+  `outputFileTracingIncludes`. Merged and deployed to production.
+- BYOK free-tier gating bug fixed — `/api/extract` and `/api/match` now check `user_api_keys` directly instead of gating on `profiles.preferred_provider`.
+- `/api/extract` false-positive rejection of anonymous/company-less JDs fixed — rejection now keys on `role` confidence only, not `company_name`.
+- Vercel Analytics confirmed on.
 - `AGENTS.md` updated: no git history rewrites without explicit prior
   approval.
 
 ## 2. Open / blocking
 
-- **Blocking — PDF extraction not yet confirmed on production.** Fix is
-  merged and deployed; only verified on preview. Needs one real upload
-  test on the live production site.
-- **Blocking (new) — BYOK key not recognized after free-tier
-  exhaustion.** User added a personal Gemini key after exhausting the 5
-  free credits; app still blocks with the free-limit message instead of
-  recognizing the new key. Root cause unknown — likely a stale
-  `free_ai_uses_remaining` check or client state not re-checking BYOK
-  status after key save. Undermines BYOK for exactly the users who need
-  it.
-- Vercel Analytics/Speed Insights dashboard toggles — code merged
-  (Session 7), still not confirmed flipped.
 - Silent-failure UX gap — resume extraction failure is only visible in
   Settings; no signal at upload time or when fit analysis silently
   doesn't run. Not yet scoped.
@@ -58,28 +47,22 @@ anything not called out below as recently changed.*
 
 ## 3. Next steps, priority order
 
-**Blocking / required next:**
-1. Confirm PDF extraction + fit analysis on live production (not
-   preview) via a real upload.
-2. Investigate and fix BYOK-key-not-recognized-after-free-limit bug.
-3. Flip Vercel Analytics + Speed Insights dashboard toggles.
-
 **Backlog:**
-4. Silent-failure UX — surface extraction failure at the `/new` upload
+1. Silent-failure UX — surface extraction failure at the `/new` upload
    step, not just Settings.
-5. Save-confirmation UX — no visible indicator that an application-detail
+2. Save-confirmation UX — no visible indicator that an application-detail
    edit saved successfully unless the user scrolls up; add inline/toast
    confirmation.
-6. "Source" field — convert to dropdown (LinkedIn, Indeed, JobStreet,
+3. "Source" field — convert to dropdown (LinkedIn, Indeed, JobStreet,
    Facebook, etc.) with free-text fallback.
-7. Stale Resend-sandbox copy in login/signup pages (now fully wrong, not
+4. Stale Resend-sandbox copy in login/signup pages (now fully wrong, not
    just sandboxed).
-8. Mobile audit: `/new`, `/applications/[id]` body, `/onboarding`.
-9. Legal review of `/terms`/`/privacy` — discretionary.
-10. JD URL-fetching feature — large, touches a Protected AI Route, needs
-    its own full plan cycle, don't bundle with smaller tasks.
-11. `/api/extract`/`/api/match` terminal-error response asymmetry
-    (422 vs 500) — minor cleanup, low priority.
+5. Mobile audit: `/new`, `/applications/[id]` body, `/onboarding`.
+6. Legal review of `/terms`/`/privacy` — discretionary.
+7. JD URL-fetching feature — large, touches a Protected AI Route, needs
+   its own full plan cycle, don't bundle with smaller tasks.
+8. `/api/extract`/`/api/match` terminal-error response asymmetry
+   (422 vs 500) — minor cleanup, low priority.
 
 ---
 

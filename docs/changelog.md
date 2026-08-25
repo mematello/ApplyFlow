@@ -1,7 +1,12 @@
 # ApplyFlow — Changelog
 
-## [2026-08-24] (Session 8)
+## [2026-08-25] (Session 9)
 - Fixed: BYOK (Bring Your Own Key) bug in `/api/extract` and `/api/match` where custom keys were ignored and triggered the `FREE_LIMIT_EXHAUSTED` (403) error if `profiles.preferred_provider` was null. Fixed by decoupling key lookup and defaulting to 'google'.
+- Confirmed: PDF resume text extraction is fully functional on the live production environment.
+- Confirmed: Vercel Analytics is enabled and actively tracking. Speed Insights was intentionally left disabled to conserve free-tier allocation.
+- Fixed: `/api/extract` false-positive rejection of anonymous/company-less job descriptions. Rejection logic now solely evaluates `role` confidence instead of `company_name` to prevent valid postings without explicit company names from being treated as injection attempts.
+
+## [2026-08-24] (Session 8)
 - Implemented: Initial production deployment to Vercel.
 - Fixed: `vercel.json` UTF-16/BOM encoding bug causing parsing errors in production.
 - Fixed: ESLint build-blocking errors (`react/no-unescaped-entities`, `@typescript-eslint/no-explicit-any`).

@@ -1,5 +1,8 @@
 # ApplyFlow — Decisions Log
 
+## [2026-08-25] Vercel Speed Insights Disabled
+- Context: We enabled Vercel Analytics earlier but left Speed Insights unverified.
+- Decision: Explicitly decided to leave Speed Insights disabled and toggle it off in the Vercel dashboard. This is an intentional choice to conserve the Vercel free-tier allocation (which is being shared with another project). It is not an open gap.
 ## [2026-08-25] AI Extraction Confidence Gate Refinement
 - Context: `/api/extract` was throwing false positives for legitimate job descriptions that were anonymous (omitted the hiring company's name). The model correctly scored `company_name` confidence as 'low' (because "Unknown" is not a confident hiring company), which triggered our prompt-injection rejection gate.
 - Decision: Removed `company_name` from the downstream rejection condition (`validated.extraction_confidence?.company_name === 'low'`). The gate now exclusively checks if `role === 'low'`.
