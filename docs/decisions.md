@@ -1,5 +1,11 @@
 # ApplyFlow — Decisions Log
 
+## [2026-08-25] AI Extraction Confidence Gate Refinement
+- Context: `/api/extract` was throwing false positives for legitimate job descriptions that were anonymous (omitted the hiring company's name). The model correctly scored `company_name` confidence as 'low' (because "Unknown" is not a confident hiring company), which triggered our prompt-injection rejection gate.
+- Decision: Removed `company_name` from the downstream rejection condition (`validated.extraction_confidence?.company_name === 'low'`). The gate now exclusively checks if `role === 'low'`.
+- Trade-offs: A genuine job posting always has some role/title, serving as a reliable anchor, whereas an anonymous posting will lack a company name. Option 1 (`company_name === 'low' && role === 'low'`) was rejected because it relied on an unverified assumption that injections would always fail both, which could pass plausible-sounding role injections through if they included garbage company data.
+- Future Hardening Item: Option 3 (schema change to separate "missing data" from "injection attempt" via an explicit `is_injection_attempt: boolean` signal) is the correct long-term architecture but was deferred as scope creep for a small bug fix.
+
 ## [2026-08-24] BYOK Default Provider Fallback
 - Context: `profiles.preferred_provider` was acting as a hard gate for checking `user_api_keys`, causing users with a saved key but a null preferred provider to be blocked by the free-tier limit.
 - Decision: Decoupled the key check by querying `user_api_keys` for `preferred_provider || 'google'`. We default to 'google' when null rather than querying across all providers. This avoids multi-provider complexity and is safe because BYOK is currently locked to Gemini-only.

@@ -270,7 +270,7 @@ Example Output:
             }
           }
 
-          if (validated.extraction_confidence?.company_name === 'low' || validated.extraction_confidence?.role === 'low') {
+          if (validated.extraction_confidence?.role === 'low') {
             return NextResponse.json(
               { error: "Doesn't look like a valid job description (low confidence)." },
               { status: 422 }
@@ -299,7 +299,7 @@ Example Output:
             }
           }
 
-          if (validated.extraction_confidence?.company_name === 'low' || validated.extraction_confidence?.role === 'low') {
+          if (validated.extraction_confidence?.role === 'low') {
             return NextResponse.json(
               { error: "Doesn't look like a valid job description (low confidence)." },
               { status: 422 }
