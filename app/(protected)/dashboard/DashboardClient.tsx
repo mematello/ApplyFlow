@@ -211,8 +211,8 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
           />
         </div>
         
-        <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto hide-scrollbar">
-          {['Active', 'All', 'draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn', 'ghosted'].map(status => (
+        <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto hide-scrollbar items-center">
+          {['Active', 'All'].map(status => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -220,9 +220,31 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
                 filter === status ? 'bg-gray-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-200 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
               }`}
             >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
+              {status}
             </button>
           ))}
+          
+          <div className="relative">
+            <select
+              value={['Active', 'All'].includes(filter) ? "" : filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className={`appearance-none pl-4 pr-10 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus:ring-2 focus:ring-blue-500 ${
+                !['Active', 'All'].includes(filter) 
+                  ? 'bg-gray-900 text-white border border-transparent dark:bg-zinc-100 dark:text-zinc-900 shadow-sm' 
+                  : 'bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-200 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
+              }`}
+            >
+              <option value="" disabled className="bg-white text-gray-900 dark:bg-zinc-900 dark:text-zinc-100">Filter by status</option>
+              {['draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn', 'ghosted'].map(status => (
+                <option key={status} value={status} className="bg-white text-gray-900 dark:bg-zinc-900 dark:text-zinc-100">
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+              <ChevronDown className={`w-4 h-4 transition-colors ${!['Active', 'All'].includes(filter) ? 'text-gray-300 dark:text-zinc-600' : 'text-gray-400 dark:text-zinc-500'}`} />
+            </div>
+          </div>
         </div>
       </div>
 
