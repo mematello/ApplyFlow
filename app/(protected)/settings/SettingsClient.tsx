@@ -118,6 +118,53 @@ export default function SettingsClient({
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
 
+  // Reminders Preferences
+  const [reminderTimezone, setReminderTimezone] = useState(initialProfile.reminder_timezone || "");
+  // DB might return "09:00:00", we should trim it to "09:00" for type="time"
+  const [reminderSendTime, setReminderSendTime] = useState((initialProfile.reminder_send_time || "09:00").substring(0, 5));
+  const [isSavingReminders, setIsSavingReminders] = useState(false);
+  const [reminderMessage, setReminderMessage] = useState("");
+  const isSavingRemindersRef = useRef(false);
+
+  const handleSaveReminders = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSavingRemindersRef.current) return;
+    isSavingRemindersRef.current = true;
+    setIsSavingReminders(true);
+    setReminderMessage("");
+
+    try {
+      if (reminderTimezone) {
+        new Intl.DateTimeFormat(undefined, { timeZone: reminderTimezone });
+      }
+    } catch (e) {
+      setReminderMessage(`Error: Invalid timezone string "${reminderTimezone}".`);
+      isSavingRemindersRef.current = false;
+      setIsSavingReminders(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          reminder_timezone: reminderTimezone,
+          reminder_send_time: reminderSendTime
+        })
+        .eq('id', initialProfile.id);
+
+      if (error) {
+        setReminderMessage(`Error: ${error.message}`);
+      } else {
+        setReminderMessage("Reminder preferences saved!");
+        router.refresh();
+      }
+    } finally {
+      isSavingRemindersRef.current = false;
+      setIsSavingReminders(false);
+    }
+  };
+
   // Resumes state
   const [resumes, setResumes] = useState(initialResumes);
   const [previewResumeId, setPreviewResumeId] = useState<string | null>(null);
@@ -377,6 +424,51 @@ export default function SettingsClient({
           {profileMessage && <p className="mt-2 text-sm text-green-600 dark:text-green-400">{profileMessage}</p>}
         </form>
       </section>
+
+      {/* Reminders Section */}
+      <section className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm mt-6">
+        <h2 className="text-xl font-semibold mb-6 border-b border-gray-200 dark:border-zinc-800 pb-4">Reminders</h2>
+        <form onSubmit={handleSaveReminders} className="w-full space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Timezone</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={reminderTimezone}
+                  onChange={(e) => setReminderTimezone(e.target.value)}
+                  className="rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2 w-full text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setReminderTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone)}
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
+                >
+                  Auto-Detect
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-1">Send Time</label>
+              <input
+                type="time"
+                value={reminderSendTime}
+                onChange={(e) => setReminderSendTime(e.target.value)}
+                className="rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 p-2 w-full text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={isSavingReminders || (reminderTimezone === initialProfile.reminder_timezone && reminderSendTime === (initialProfile.reminder_send_time || "09:00").substring(0, 5))}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:opacity-50 transition-colors mt-2"
+          >
+            {isSavingReminders ? "Saving..." : "Save Preferences"}
+          </button>
+          {reminderMessage && <p className="mt-2 text-sm text-green-600 dark:text-green-400">{reminderMessage}</p>}
+        </form>
+      </section>
+
 
       {/* AI Provider Settings */}
       <section className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-gray-200 dark:border-zinc-800 shadow-sm">

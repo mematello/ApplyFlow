@@ -3,6 +3,8 @@ export interface Profile {
   full_name: string | null;
   preferred_model: string | null;
   preferred_provider: string | null;
+  reminder_timezone: string | null;
+  reminder_send_time: string | null;
 }
 
 export interface Application {

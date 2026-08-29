@@ -32,7 +32,7 @@ export default async function DashboardPage() {
       .from('applications')
       .select('*')
       .eq('user_id', user.id)
-      .order('date_applied', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error("Error fetching applications:", error);

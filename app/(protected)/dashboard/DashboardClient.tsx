@@ -16,16 +16,33 @@ const STATUS_COLORS: Record<string, string> = {
   offer: "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800",
   rejected: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800",
   withdrawn: "bg-gray-100 text-gray-500 border-gray-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700",
+  ghosted: "bg-gray-200 text-gray-600 border-gray-300 dark:bg-zinc-700 dark:text-zinc-400 dark:border-zinc-600",
 };
 
 export default function DashboardClient({ initialApplications, isLocal }: { initialApplications: Application[], isLocal?: boolean }) {
   const router = useRouter();
   const [applications, setApplications] = useState<Application[]>(initialApplications);
-  const [filter, setFilter] = useState<string>("All");
+  const [filter, setFilter] = useState<string>("Active");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [sortField, setSortField] = useState<string>("date_applied");
+  const [sortField, setSortField] = useState<string>("created_at");
   const [sortAsc, setSortAsc] = useState<boolean>(false); // false = descending by default
   const [isLoading, setIsLoading] = useState<boolean>(isLocal === true);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
+  useEffect(() => {
+    const savedPageSize = localStorage.getItem('dashboard_page_size');
+    if (savedPageSize) {
+      setPageSize(Number(savedPageSize));
+    }
+  }, []);
+
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const size = Number(e.target.value);
+    setPageSize(size);
+    setCurrentPage(1);
+    localStorage.setItem('dashboard_page_size', size.toString());
+  };
 
   useEffect(() => {
     if (isLocal) {
@@ -113,7 +130,9 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
 
   // Derived state: Filter (Status + Search)
   let filteredApps = applications;
-  if (filter !== "All") {
+  if (filter === "Active") {
+    filteredApps = filteredApps.filter(a => !['rejected', 'withdrawn', 'ghosted'].includes(a.status));
+  } else if (filter !== "All") {
     filteredApps = filteredApps.filter(a => a.status === filter);
   }
   if (searchQuery.trim() !== "") {
@@ -143,8 +162,21 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
 
     if (valA < valB) return sortAsc ? -1 : 1;
     if (valA > valB) return sortAsc ? 1 : -1;
+
+    // Fallback sort
+    const createA = String(a.created_at || "");
+    const createB = String(b.created_at || "");
+    if (createA < createB) return 1;
+    if (createA > createB) return -1;
+    
     return 0;
   });
+
+  // Pagination
+  const totalPages = Math.ceil(sortedApps.length / pageSize) || 1;
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  
+  const paginatedApps = sortedApps.slice((safeCurrentPage - 1) * pageSize, safeCurrentPage * pageSize);
 
   const SortIcon = ({ field }: { field: string }) => {
     if (sortField !== field) return <span className="w-4 h-4 inline-block opacity-0 group-hover:opacity-30 transition-opacity"><ChevronDown className="w-4 h-4" /></span>;
@@ -180,7 +212,7 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
         </div>
         
         <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto hide-scrollbar">
-          {['All', 'draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn'].map(status => (
+          {['Active', 'All', 'draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn', 'ghosted'].map(status => (
             <button
               key={status}
               onClick={() => setFilter(status)}
@@ -228,7 +260,7 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
             </tr>
           </thead>
           <tbody className="block md:table-row-group divide-y divide-gray-100 dark:divide-zinc-800">
-            {sortedApps.map(app => (
+            {paginatedApps.map(app => (
               <tr 
                 key={app.id} 
                 onClick={() => handleRowClick(app.id)}
@@ -262,6 +294,7 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
                       <option className="bg-white text-gray-900 dark:bg-zinc-900 dark:text-zinc-100" value="offer">Offer</option>
                       <option className="bg-white text-gray-900 dark:bg-zinc-900 dark:text-zinc-100" value="rejected">Rejected</option>
                       <option className="bg-white text-gray-900 dark:bg-zinc-900 dark:text-zinc-100" value="withdrawn">Withdrawn</option>
+                      <option className="bg-white text-gray-900 dark:bg-zinc-900 dark:text-zinc-100" value="ghosted">Ghosted</option>
                     </select>
                   </div>
                 </td>
@@ -299,6 +332,42 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
             )}
           </tbody>
         </table>
+        {sortedApps.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-t border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-950">
+            <div className="flex items-center gap-2 mb-4 sm:mb-0">
+              <span className="text-sm text-gray-600 dark:text-zinc-400">Rows per page:</span>
+              <select
+                value={pageSize}
+                onChange={handlePageSizeChange}
+                className="bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block p-1.5"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-zinc-400">
+              <span>Page {safeCurrentPage} of {totalPages}</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={safeCurrentPage === 1}
+                  className="px-3 py-1 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={safeCurrentPage === totalPages}
+                  className="px-3 py-1 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

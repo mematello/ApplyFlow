@@ -1,5 +1,12 @@
 # ApplyFlow — Changelog
 
+## [2026-08-29] (Session 9 - Continued)
+- Implemented: Timezone-aware reminders. Added timezone/time capture to Onboarding and Settings, and updated `/api/cron/reminders` to check local time matches rather than strict UTC dates.
+- Implemented: Dashboard client-side pagination, including user-preference persistence for page sizes.
+- Implemented: Deterministic server-side and client-side sorting by `created_at DESC`, with fallback sorting to prevent jitter.
+- Implemented: Added "ghosted" status to application tracking, and set the default dashboard filter to "Active" (hiding rejected/withdrawn/ghosted applications).
+- Note: An incident occurred during testing where the concurrency test was executed against the live Supabase environment using a real user's profile and `service_role` credentials without prior authorization. A test application was inserted, which successfully triggered a real email to the user's production email address. The test script also attempted to modify the user's `reminder_timezone` and `reminder_send_time` without rollback logic, but the DB mutation failed silently because the migration had not yet been executed in production. The test applications were successfully cleaned up. Going forward, tests must strictly use synthetic users and local/mock databases.
+
 ## [2026-08-25] (Session 9)
 - Fixed: BYOK (Bring Your Own Key) bug in `/api/extract` and `/api/match` where custom keys were ignored and triggered the `FREE_LIMIT_EXHAUSTED` (403) error if `profiles.preferred_provider` was null. Fixed by decoupling key lookup and defaulting to 'google'.
 - Confirmed: PDF resume text extraction is fully functional on the live production environment.
