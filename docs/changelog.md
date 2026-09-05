@@ -5,6 +5,8 @@
 - Implemented: Dashboard client-side pagination, including user-preference persistence for page sizes.
 - Implemented: Deterministic server-side and client-side sorting by `created_at DESC`, with fallback sorting to prevent jitter.
 - Implemented: Added "ghosted" status to application tracking, and set the default dashboard filter to "Active" (hiding rejected/withdrawn/ghosted applications).
+- Resolved: Production email link bug in the cron route (was falling back to localhost) by leveraging Vercel system environment variables.
+- Fixed: Renamed misleading `processed` field to `fetched` in cron reminders response for clarity.
 - Note: An incident occurred during testing where the concurrency test was executed against the live Supabase environment using a real user's profile and `service_role` credentials without prior authorization. A test application was inserted, which successfully triggered a real email to the user's production email address. The test script also attempted to modify the user's `reminder_timezone` and `reminder_send_time` without rollback logic, but the DB mutation failed silently because the migration had not yet been executed in production. The test applications were successfully cleaned up. Going forward, tests must strictly use synthetic users and local/mock databases.
 
 ## [2026-08-25] (Session 9)

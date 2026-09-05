@@ -183,7 +183,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ 
       success: true, 
-      processed: applications.length,
+      fetched: applications.length,
       successful: successfulSends.length,
       failed: failedSends.length,
       details: { successfulSends, failedSends }
