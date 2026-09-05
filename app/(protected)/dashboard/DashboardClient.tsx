@@ -301,7 +301,7 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
                       value={app.status}
                       onClick={(e) => e.stopPropagation()} // Prevent row click
                       onChange={(e) => handleStatusChange(app.id, e.target.value, e)}
-                      className="bg-transparent appearance-none border-none outline-none cursor-pointer pl-3 pr-8 py-1.5 focus:ring-0 w-full font-medium"
+                      className="bg-transparent appearance-none border-none outline-none cursor-pointer pl-3 pr-8 py-1.5 focus:ring-0 font-medium"
                       style={{
                         backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
                         backgroundPosition: 'right 0.5rem center',
