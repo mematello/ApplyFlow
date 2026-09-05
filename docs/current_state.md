@@ -14,6 +14,7 @@ anything not called out below as recently changed.*
 - **Timezone-aware reminder emails:** Fully implemented, verified, and shipped. Includes timezone and time capture during Onboarding, editable preferences in Settings, and a self-healing `>=` time-match logic in the `/api/cron/reminders` cron route.
 - **Database Migrations:** The migration for `reminder_timezone` and `reminder_send_time` in `profiles`, and the migration adding the `ghosted` status to the `application_status` enum, were both successfully run against the live production database.
 - **External Cron Scheduler:** The `/api/cron/reminders` endpoint is now triggered by an external scheduler (cron-job.org) running every 1 minute. This replaces Vercel's native cron due to a known constraint: the Vercel Hobby plan strictly limits native cron execution to once daily.
+- **Cron Reminders:** Shifted execution to `cron-job.org` due to Vercel Hobby limits. Now accurately targets the user's localized time with an atomic check-and-set strategy. Resolved the production `localhost` email link issue by refactoring URL resolution to use Vercel system environment variables (`VERCEL_PROJECT_PRODUCTION_URL` and `VERCEL_URL`) instead of relying solely on manually defined `APP_URL`.
 - **Dashboard Enhancements:**
   - **Pagination:** Added client-side pagination with 10/20/50/100 rows per page, persisting the user's preference in `localStorage`.
   - **Sorting:** Default dashboard sort is now deterministic by `created_at DESC`, with fallback sorting logic to prevent jitter.
@@ -24,7 +25,6 @@ anything not called out below as recently changed.*
 
 ## 2. Open / blocking
 
-- **Email reminder link bug:** the "View Application" (or equivalent) link inside the reminder email currently points to localhost instead of the live production URL. Root cause not yet confirmed — likely candidate is a base-URL env var (e.g. `NEXT_PUBLIC_SITE_URL` or similar) that's unset or defaults to localhost in the email-template code path (`lib/utils/email.ts` or the cron reminders route), not yet verified. Needs investigation before a fix is proposed.
 - **Notes field mobile sizing:** the notes textarea on mobile has a small fixed viewing area compared to desktop. Admin wants it adjustable/resizable on mobile the same way it behaves on desktop. Not yet scoped — UI-only, should not need data/API changes.
 - **Status label truncation:** status badges/pills for longer words (e.g. "Interview", "Screening") are visually cut off in the UI, while shorter ones (e.g. "Applied") display fine. Likely a fixed-width or overflow/truncate CSS issue on the status badge component. Not yet scoped.
 - **Silent-failure UX gap:** Resume extraction failure is only visible in Settings; no signal at upload time or when fit analysis silently doesn't run. Not yet scoped.

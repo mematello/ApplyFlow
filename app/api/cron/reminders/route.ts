@@ -55,7 +55,7 @@ export async function GET(req: Request) {
     }
 
     if (!applications || applications.length === 0) {
-      return NextResponse.json({ message: 'No reminders to process.', baseUrl: getBaseUrl() });
+      return NextResponse.json({ message: 'No reminders to process.' });
     }
 
     // Fetch user profiles to personalize the greeting and get timezone preferences
@@ -186,8 +186,7 @@ export async function GET(req: Request) {
       processed: applications.length,
       successful: successfulSends.length,
       failed: failedSends.length,
-      details: { successfulSends, failedSends },
-      baseUrl: getBaseUrl()
+      details: { successfulSends, failedSends }
     });
 
   } catch (err: unknown) {
