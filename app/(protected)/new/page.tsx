@@ -763,7 +763,7 @@ export default function NewApplicationPage() {
               Notes
               {aiSuggestedFields.has('notes') && <span title="AI suggested"><Sparkles className="w-3 h-3 text-blue-500 inline ml-1" /></span>}
             </label>
-            <textarea name="notes" value={formData.notes} onChange={handleInputChange} className={`w-full p-2 rounded-md bg-white dark:bg-zinc-900 border ${aiSuggestedFields.has('notes') ? 'border-blue-400 dark:border-blue-500' : 'border-gray-300 dark:border-zinc-700'} focus:ring-2 focus:ring-blue-500 outline-none h-48 text-gray-900 dark:text-zinc-100 transition-colors`} />
+            <textarea name="notes" value={formData.notes} onChange={handleInputChange} className={`w-full p-2 rounded-md bg-white dark:bg-zinc-900 border ${aiSuggestedFields.has('notes') ? 'border-blue-400 dark:border-blue-500' : 'border-gray-300 dark:border-zinc-700'} focus:ring-2 focus:ring-blue-500 outline-none min-h-48 resize-y text-gray-900 dark:text-zinc-100 transition-colors`} />
           </div>
 
           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-zinc-800">
