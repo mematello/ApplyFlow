@@ -1,5 +1,30 @@
 # ApplyFlow — Decisions Log
 
+## [2026-09-05] Filter Row Redesign & Information Density
+- Context: The dashboard status filter row (10 chips) was overflowing on mobile and causing horizontal scroll bars on desktop, violating the design goal of a clean, app-like interface.
+- Decision: Replaced the 10 chips with an `[Active]` chip, `[All]` chip, and a status `<select>` dropdown.
+- Reasoning: Chosen over adding a custom scroll affordance or a two-row wrap layout because it solves the root information density problem rather than just managing the overflow, and scales elegantly to mobile viewports without requiring custom breakpoints.
+
+## [2026-09-05] Ghosted/Rejected Hiding Strategy
+- Context: Users need a way to filter out dead applications (rejected, withdrawn, ghosted) from their main view.
+- Decision: Implemented this via a status-based dashboard filter defaulting to "Active", rather than introducing a separate `is_archived` boolean flag.
+- Reasoning: Avoids creating a second, independent state axis that would need to be kept synchronized with the `status` enum.
+
+## [2026-09-05] Legacy Profile Timezone Default
+- Context: Added `reminder_timezone` and `reminder_send_time` to profiles. Legacy users without these fields need a safe fallback.
+- Decision: Existing users default to UTC timezone and `09:00:00` send time until they explicitly configure their preferences in Settings.
+- Trade-offs: Requires a one-time manual backfill via the live SQL editor for the admin's own account (to set `Asia/Manila`), rather than attempting an automated data migration, adhering to the standing convention that one-off data adjustments for a single admin account do not warrant a migration script.
+
+## [2026-09-05] Timezone Detection Strategy
+- Context: Capturing the user's timezone during onboarding to accurately send reminders in their local time.
+- Decision: Timezone detection relies exclusively on the browser's `Intl.DateTimeFormat().resolvedOptions().timeZone` API, with no IP-based geolocation fallback.
+- Trade-offs: Accepted limitation for users who actively block or misreport their browser timezone (e.g., via strict privacy extensions), as they will need to manually correct it in Settings.
+
+## [2026-09-05] External Scheduler for Reminders
+- Context: Need to trigger `/api/cron/reminders` every minute to ensure timezone-accurate delivery, but Vercel's Hobby (free) tier strictly restricts native cron jobs (`vercel.json`) to once daily.
+- Decision: Removed Vercel native cron entirely and opted to use a third-party free scheduler (cron-job.org) hitting the endpoint every minute with the existing `CRON_SECRET` bearer token, rather than upgrading to Vercel Pro.
+- Trade-offs: Introduces a third-party dependency with no SLA and no retry guarantees. 
+- Mitigation: To protect against missed ticks silently dropping reminders permanently, the `/api/cron/reminders` route was explicitly designed with self-healing `>=` time-match logic (checking if the local time is `>=` the send time on the target date, rather than exact-minute equality).
 ## [2026-08-25] Vercel Speed Insights Disabled
 - Context: We enabled Vercel Analytics earlier but left Speed Insights unverified.
 - Decision: Explicitly decided to leave Speed Insights disabled and toggle it off in the Vercel dashboard. This is an intentional choice to conserve the Vercel free-tier allocation (which is being shared with another project). It is not an open gap.

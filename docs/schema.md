@@ -18,6 +18,8 @@ User profile data, linked to authentication.
 - `preferred_model` (TEXT, nullable)
 - `preferred_provider` (TEXT, nullable)
 - `free_ai_uses_remaining` (INT, NOT NULL, Default `5`, protected by trigger)
+- `reminder_timezone` (TEXT, nullable)
+- `reminder_send_time` (TIME, nullable, Default `'09:00:00'`)
 
 ### `applications`
 Core entity for tracking job applications.
@@ -104,7 +106,7 @@ State tracker for atomic locking and deduplication suppression of operator alert
 ---
 
 ## Enums
-- **`application_status`**: `'draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn'`
+- **`application_status`**: `'draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn', 'ghosted'`
 - **`application_priority`**: `'low', 'medium', 'high'`
 
 ---

@@ -9,7 +9,7 @@ app/
   api/
     extract/            → AI job-description extraction endpoint
     match/              → AI resume-fit analysis endpoint (Billing rides on extract)
-    cron/reminders/     → Scheduled follow-up email job
+    cron/reminders/     → Scheduled follow-up email job (triggered via external cron-job.org)
     account/delete/     → Account deletion and storage cleanup
     applications/migrate/ → Endpoint for migrating local applications to Supabase
   migrate/              → Interstitial page for local-to-cloud migration
@@ -55,9 +55,10 @@ docs/
 - **Settings & BYOK**: The `app/(protected)/settings/` page includes an "AI Providers & BYOK" section scoped to Google Gemini only, allowing users to override global limits securely.
 - **Theme**: Dark mode is implemented via `next-themes` (system default + manual toggle).
 - **Data Export & Privacy Controls**: Settings exposes a CSV/JSON/XLSX export and a 'Clear Local Data' IndexedDB wipe.
-- **Auth & System Email Delivery**: Authentication emails, scheduled follow-up reminders (`/api/cron/reminders`), and operator alerts are all delivered via Gmail SMTP (`applyflow.noreply@gmail.com`). Resend has been completely removed to consolidate around a single email infrastructure.
+- **Auth & System Email Delivery**: Authentication emails, scheduled follow-up reminders (`/api/cron/reminders`), and operator alerts are all delivered via Gmail SMTP (`applyflow.noreply@gmail.com`). Resend has been completely removed to consolidate around a single email infrastructure. The `/api/cron/reminders` endpoint is triggered every minute by an external scheduler (cron-job.org) using a Bearer token with `CRON_SECRET`.
 - **Analytics & Performance**: Vercel Analytics and Speed Insights are mounted once at the root layout level (`app/layout.tsx`) to track traffic and web vitals across the application.
 
 ## Known constraints
 - **Gemini Rate Limits**: Requests can hit quota limits (`429`) or demand limits (`503`), necessitating the multi-model fallback design.
 - **Client/Server Boundary**: API keys never touch the browser; all AI calls are handled securely in Next.js API routes.
+- **Cron Scheduling limits**: Vercel Hobby plan restricts native cron jobs (`vercel.json`) to run at most once daily. As a result, the application relies on an external scheduler (cron-job.org) to handle high-frequency recurring tasks like the minute-resolution reminder emails.
