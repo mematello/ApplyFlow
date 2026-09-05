@@ -186,7 +186,8 @@ export async function GET(req: Request) {
       processed: applications.length,
       successful: successfulSends.length,
       failed: failedSends.length,
-      details: { successfulSends, failedSends }
+      details: { successfulSends, failedSends },
+      baseUrl: getBaseUrl()
     });
 
   } catch (err: unknown) {
