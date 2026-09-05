@@ -419,11 +419,11 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
           <div className="mt-6 space-y-6">
             <div>
               <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Interview Notes</label>
-              <textarea name="interview_notes" value={formData.interview_notes} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none min-h-32 md:min-h-24 resize-y text-gray-900 dark:text-zinc-100" />
+              <textarea name="interview_notes" value={formData.interview_notes} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none min-h-48 md:min-h-24 resize-y text-gray-900 dark:text-zinc-100" />
             </div>
             <div>
               <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">General Notes</label>
-              <textarea name="notes" value={formData.notes} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none min-h-32 md:min-h-24 resize-y text-gray-900 dark:text-zinc-100" />
+              <textarea name="notes" value={formData.notes} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none min-h-48 md:min-h-24 resize-y text-gray-900 dark:text-zinc-100" />
             </div>
           </div>
         </section>

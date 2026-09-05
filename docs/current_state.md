@@ -20,12 +20,12 @@ anything not called out below as recently changed.*
   - **Sorting:** Default dashboard sort is now deterministic by `created_at DESC`, with fallback sorting logic to prevent jitter.
   - **Filter UI Redesign:** Replaced the sprawling 10-chip horizontal overflow list with a streamlined `[Active]` chip, `[All]` chip, and a status dropdown for the remaining 8 statuses.
   - **Default Filter:** The dashboard now filters by "Active" statuses by default (automatically hiding rejected, withdrawn, and ghosted applications).
+- **Mobile UI Fixes:** Enabled manual drag-resizing (`resize-y`) and bumped the default minimum height for the `notes` and `interview_notes` textareas on mobile viewports so they don't render cramped.
 
 *Note: A testing incident occurred this session where `service_role` credentials were used against the live database without prior authorization during concurrency testing. This issue has been fully documented and resolved in `changelog.md` and requires no further action here.*
 
 ## 2. Open / blocking
 
-- **Notes field mobile sizing:** the notes textarea on mobile has a small fixed viewing area compared to desktop. Admin wants it adjustable/resizable on mobile the same way it behaves on desktop. Not yet scoped — UI-only, should not need data/API changes.
 - **Status label truncation:** status badges/pills for longer words (e.g. "Interview", "Screening") are visually cut off in the UI, while shorter ones (e.g. "Applied") display fine. Likely a fixed-width or overflow/truncate CSS issue on the status badge component. Not yet scoped.
 - **Silent-failure UX gap:** Resume extraction failure is only visible in Settings; no signal at upload time or when fit analysis silently doesn't run. Not yet scoped.
 - **Legal Pages:** `/terms` and `/privacy` are still draft-pending lawyer review. Discretionary, user's call on launch timing.
