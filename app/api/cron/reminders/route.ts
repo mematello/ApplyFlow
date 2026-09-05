@@ -4,6 +4,19 @@ import { emailTransporter, verifyEmailTransporter } from '../../../../lib/utils/
 
 export async function GET(req: Request) {
   try {
+    const getBaseUrl = () => {
+      if (process.env.APP_URL) {
+        return process.env.APP_URL;
+      }
+      if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+        return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+      }
+      if (process.env.VERCEL_URL) {
+        return `https://${process.env.VERCEL_URL}`;
+      }
+      return 'http://localhost:3000';
+    };
+
     // 1. Verify Vercel Cron authentication (only allow authorized requests)
     const authHeader = req.headers.get('Authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET || 'test_secret'}`) {
@@ -42,7 +55,7 @@ export async function GET(req: Request) {
     }
 
     if (!applications || applications.length === 0) {
-      return NextResponse.json({ message: 'No reminders to process.' });
+      return NextResponse.json({ message: 'No reminders to process.', baseUrl: getBaseUrl() });
     }
 
     // Fetch user profiles to personalize the greeting and get timezone preferences
@@ -136,14 +149,14 @@ export async function GET(req: Request) {
                     </div>
 
                     <div style="text-align: center;">
-                      <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/applications/${app.id}" style="display: inline-block; background-color: #111827; color: #ffffff; font-weight: 600; font-size: 15px; text-decoration: none; padding: 12px 24px; border-radius: 6px; text-align: center; transition: background-color 0.2s;">View Application Details</a>
+                      <a href="${getBaseUrl()}/applications/${app.id}" style="display: inline-block; background-color: #111827; color: #ffffff; font-weight: 600; font-size: 15px; text-decoration: none; padding: 12px 24px; border-radius: 6px; text-align: center; transition: background-color 0.2s;">View Application Details</a>
                     </div>
                   </div>
                 </div>
                 <div style="max-width: 500px; margin: 24px auto 0; text-align: center;">
                   <p style="margin: 0; font-size: 13px; color: #6b7280;">
                     You're receiving this because reminders are enabled for this application.<br>
-                    <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/applications/${app.id}" style="color: #6b7280; text-decoration: underline;">Manage reminder settings &rarr;</a>
+                    <a href="${getBaseUrl()}/applications/${app.id}" style="color: #6b7280; text-decoration: underline;">Manage reminder settings &rarr;</a>
                   </p>
                 </div>
               </div>
