@@ -1,5 +1,10 @@
 # ApplyFlow — Decisions Log
 
+## [2026-09-06] Save-Confirmation UX & Sticky Footer Toast
+- Context: The application detail save confirmation rendered at the top of the form, leaving users without immediate feedback when clicking the bottom-anchored sticky "Save Changes" button.
+- Decision: Reused the existing `toast` state to render an identical inline confirmation immediately adjacent to the "Save Changes" button. Added logic to automatically dismiss the toast (`setToast(null)`) across all three dirty-state functions (`handleInputChange`, `handleTechKeyDown`, `removeTech`) as soon as the user resumes editing.
+- Reasoning: A bottom-anchored toast provides proximate feedback where the user's cursor is. However, a persistently floating success message in a sticky footer is distracting, hence the choice to auto-dismiss on edit rather than persisting until the next save attempt.
+
 ## [2026-09-06] Resume Extraction Silent-Failure UX
 - Context: The backend (`/api/resumes`) silently catches extraction failures and saves the resume with `extracted_text: null`. The frontend failed to surface this at upload time, and the `/new` extraction flow silently skipped match analysis without context.
 - Decision: Appended an `extractionFailed` boolean flag to the existing success response of `/api/resumes`, rather than treating it as a hard HTTP error (because the file upload itself succeeds). Added a persistent warning to the upload component, and updated the `/new` toast logic to explicitly differentiate between "no default resume" and "current resume lacks text".

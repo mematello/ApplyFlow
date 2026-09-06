@@ -1,6 +1,7 @@
 # ApplyFlow — Changelog
 
 ## [2026-09-06] (Session 10)
+- Fixed: Improved the save-confirmation UX on `/applications/[id]` by adding a bottom-anchored inline toast next to the "Save Changes" sticky button. Both top and bottom toasts now automatically dismiss when the user resumes editing the form.
 - Fixed: Addressed the silent-failure UX gap for resume extraction by adding a persistent inline warning to the resume uploader, and updated the job extraction flow (`/new`) to surface distinct toast messages when match analysis is skipped due to a missing resume or missing extracted text.
 - Fixed: Production email link bug in the cron route (was falling back to localhost) by leveraging a fallback chain using Vercel system environment variables (`VERCEL_PROJECT_PRODUCTION_URL`, `VERCEL_URL`).
 - Fixed: Renamed `processed` field to `fetched` in the `/api/cron/reminders` response to accurately reflect its meaning.

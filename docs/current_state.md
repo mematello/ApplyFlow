@@ -11,6 +11,7 @@ anything not called out below as recently changed.*
 
 ## 1. Confirmed working / shipped
 
+- **Save-Confirmation UX:** Added a bottom-anchored save confirmation toast to the sticky footer in `/applications/[id]` for immediate visual feedback. Both top and bottom toasts now automatically dismiss upon subsequent edits.
 - **Silent-failure UX:** Fixed the silent extraction-failure gap by surfacing extraction failures at the upload step (via a persistent inline warning) and distinguishing skipped match-analysis contexts during job extraction via dynamic toasts.
 - **Unsaved Changes Warning:** Implemented dirty-state tracking with the `useUnsavedChangesWarning` hook and a custom `UnsavedChangesModal` dialog (using `createPortal` to prevent layout hijacking on long forms) to safely prompt for confirmation on hard navigations, in-app links, and browser back/forward history navigation when uncommitted changes exist in `/new` and `/applications/[id]`. Fully patched against iOS Safari's silent `window.confirm` suppression and verified extensively via automated and real-device testing.
 - **Notes field mobile sizing:** Standardized long-form textareas (`notes`, `interview_notes`) to use `min-h-48 resize-y` across both `/new` and `/applications/[id]`, fixing cramped rendering on mobile viewports.
@@ -30,13 +31,12 @@ anything not called out below as recently changed.*
 ## 3. Next steps, priority order
 
 **Backlog:**
-1. Save-confirmation UX — no visible indicator that an application-detail edit saved successfully unless the user scrolls up; add inline/toast confirmation.
-2. "Source" field — convert to dropdown (LinkedIn, Indeed, JobStreet, Facebook, etc.) with free-text fallback.
-3. Stale Resend-sandbox copy in login/signup pages (now fully wrong, not just sandboxed).
-4. Mobile audit: `/new`, `/applications/[id]` body, `/onboarding`.
-5. Legal review of `/terms`/`/privacy` — discretionary.
-6. JD URL-fetching feature — large, touches a Protected AI Route, needs its own full plan cycle, don't bundle with smaller tasks.
-7. `/api/extract`/`/api/match` terminal-error response asymmetry (422 vs 500) — minor cleanup, low priority.
+1. "Source" field — convert to dropdown (LinkedIn, Indeed, JobStreet, Facebook, etc.) with free-text fallback.
+2. Stale Resend-sandbox copy in login/signup pages (now fully wrong, not just sandboxed).
+3. Mobile audit: `/new`, `/applications/[id]` body, `/onboarding`.
+4. Legal review of `/terms`/`/privacy` — discretionary.
+5. JD URL-fetching feature — large, touches a Protected AI Route, needs its own full plan cycle, don't bundle with smaller tasks.
+6. `/api/extract`/`/api/match` terminal-error response asymmetry (422 vs 500) — minor cleanup, low priority.
 
 ## 4. Future plans (not yet scoped)
 
