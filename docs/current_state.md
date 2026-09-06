@@ -20,13 +20,14 @@ anything not called out below as recently changed.*
   - **Sorting:** Default dashboard sort is now deterministic by `created_at DESC`, with fallback sorting logic to prevent jitter.
   - **Filter UI Redesign:** Replaced the sprawling 10-chip horizontal overflow list with a streamlined `[Active]` chip, `[All]` chip, and a status dropdown for the remaining 8 statuses.
   - **Default Filter:** The dashboard now filters by "Active" statuses by default (automatically hiding rejected, withdrawn, and ghosted applications).
+  - **Status Badge Fix:** Removed `w-full` from the inner `select` to fix a visual bug on the live deployment where longer statuses like "Interview" and "Screening" were getting truncated/clipped.
 - **Mobile UI Fixes:** Enabled manual drag-resizing (`resize-y`) and bumped the default minimum height for the `notes` and `interview_notes` textareas on mobile viewports so they don't render cramped.
+- **Unsaved Changes Warning:** Implemented dirty-state tracking with the `useUnsavedChangesWarning` hook to prompt for confirmation on hard navigations (refresh, close), in-app internal link clicks, and browser back/forward history navigation when uncommitted changes exist in `/new` and `/applications/[id]`.
 
 *Note: A testing incident occurred this session where `service_role` credentials were used against the live database without prior authorization during concurrency testing. This issue has been fully documented and resolved in `changelog.md` and requires no further action here.*
 
 ## 2. Open / blocking
 
-- **Status label truncation:** status badges/pills for longer words (e.g. "Interview", "Screening") are visually cut off in the UI, while shorter ones (e.g. "Applied") display fine. Likely a fixed-width or overflow/truncate CSS issue on the status badge component. Not yet scoped.
 - **Silent-failure UX gap:** Resume extraction failure is only visible in Settings; no signal at upload time or when fit analysis silently doesn't run. Not yet scoped.
 - **Legal Pages:** `/terms` and `/privacy` are still draft-pending lawyer review. Discretionary, user's call on launch timing.
 

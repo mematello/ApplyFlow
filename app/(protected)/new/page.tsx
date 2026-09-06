@@ -10,6 +10,7 @@ import { User } from "@supabase/supabase-js";
 import { createApplication } from "../../../lib/data-source";
 import { normalizeTitleCase, normalizeSalaryInput } from "../../../lib/utils/format";
 import { useRef } from "react";
+import { useUnsavedChangesWarning } from "../../../hooks/useUnsavedChangesWarning";
 
 import { AIModel } from "../../../lib/types";
 
@@ -23,6 +24,9 @@ export default function NewApplicationPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [aiSuggestedFields, setAiSuggestedFields] = useState<Set<string>>(new Set());
+
+  const [isDirty, setIsDirty] = useState(false);
+  useUnsavedChangesWarning(isDirty);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -404,6 +408,7 @@ export default function NewApplicationPage() {
 
       await createApplication(user, payload);
       
+      setIsDirty(false);
       setToast({ message: "Application saved successfully!", type: 'success' });
       setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err: unknown) {
@@ -415,6 +420,7 @@ export default function NewApplicationPage() {
 
   // Handlers for dynamic state
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setIsDirty(true);
     const { name, value, type } = e.target;
     
     if (aiSuggestedFields.has(name)) {
@@ -438,6 +444,7 @@ export default function NewApplicationPage() {
       e.preventDefault();
       const val = techInput.trim();
       if (val && !formData.tech_stack.includes(val)) {
+        setIsDirty(true);
         setFormData(prev => ({ ...prev, tech_stack: [...prev.tech_stack, val] }));
       }
       setTechInput("");
@@ -445,6 +452,7 @@ export default function NewApplicationPage() {
   };
 
   const removeTech = (tech: string) => {
+    setIsDirty(true);
     setFormData(prev => ({
       ...prev,
       tech_stack: prev.tech_stack.filter(t => t !== tech)
@@ -452,6 +460,7 @@ export default function NewApplicationPage() {
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsDirty(true);
     const { name, value } = e.target;
     if (name === "company_name" || name === "role") {
       setFormData(prev => ({ ...prev, [name]: normalizeTitleCase(value) }));
@@ -493,7 +502,7 @@ export default function NewApplicationPage() {
           className="w-full h-40 p-3 rounded-md bg-gray-50 dark:bg-zinc-950 border border-gray-300 dark:border-zinc-700 text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:text-zinc-500"
           placeholder="Paste the full job description here..."
           value={jobDescription}
-          onChange={(e) => setJobDescription(e.target.value)}
+          onChange={(e) => { setJobDescription(e.target.value); setIsDirty(true); }}
         />
         <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div className="flex items-center gap-2 relative">

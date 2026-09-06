@@ -13,12 +13,16 @@ import { useRef } from 'react';
 import { Application } from '../../../../lib/types';
 import { updateApplication, deleteApplication, fetchApplicationById } from '../../../../lib/data-source';
 import { normalizeTitleCase, normalizeSalaryInput } from '../../../../lib/utils/format';
+import { useUnsavedChangesWarning } from '../../../../hooks/useUnsavedChangesWarning';
 
 export default function ApplicationDetailClient({ initialApplication, isLocal, appId }: { initialApplication: Application | null, isLocal?: boolean, appId?: string }) {
   const router = useRouter();
   
   const [applicationData, setApplicationData] = useState<Application | null>(initialApplication);
   const [isLoading, setIsLoading] = useState(isLocal && !initialApplication);
+  
+  const [isDirty, setIsDirty] = useState(false);
+  useUnsavedChangesWarning(isDirty);
   
   const [formData, setFormData] = useState({
     company_name: initialApplication?.company_name || "",
@@ -122,6 +126,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
   }, [isLocal, initialApplication, appId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setIsDirty(true);
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
@@ -136,6 +141,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
       e.preventDefault();
       const val = techInput.trim();
       if (val && !formData.tech_stack.includes(val)) {
+        setIsDirty(true);
         setFormData(prev => ({ ...prev, tech_stack: [...prev.tech_stack, val] }));
       }
       setTechInput("");
@@ -143,10 +149,12 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
   };
 
   const removeTech = (tech: string) => {
+    setIsDirty(true);
     setFormData(prev => ({ ...prev, tech_stack: prev.tech_stack.filter((t: string) => t !== tech) }));
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsDirty(true);
     const { name, value } = e.target;
     if (name === "company_name" || name === "role") {
       setFormData(prev => ({ ...prev, [name]: normalizeTitleCase(value) }));
@@ -186,6 +194,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
       
       await updateApplication(user, applicationData.id, payload);
       
+      setIsDirty(false);
       setToast({ message: "Application updated successfully!", type: 'success' });
     } catch (err: unknown) {
       setToast({ message: (err as Error).message, type: 'error' });
@@ -228,6 +237,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
       
       await deleteApplication(user, applicationData.id);
       
+      setIsDirty(false);
       router.push('/dashboard');
     } catch (err: unknown) {
       setToast({ message: (err as Error).message, type: 'error' });
