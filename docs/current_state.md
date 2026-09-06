@@ -22,7 +22,7 @@ anything not called out below as recently changed.*
   - **Default Filter:** The dashboard now filters by "Active" statuses by default (automatically hiding rejected, withdrawn, and ghosted applications).
   - **Status Badge Fix:** Removed `w-full` from the inner `select` to fix a visual bug on the live deployment where longer statuses like "Interview" and "Screening" were getting truncated/clipped.
 - **Mobile UI Fixes:** Enabled manual drag-resizing (`resize-y`) and bumped the default minimum height for the `notes` and `interview_notes` textareas on mobile viewports so they don't render cramped.
-- **Unsaved Changes Warning:** Implemented dirty-state tracking with the `useUnsavedChangesWarning` hook and a custom `UnsavedChangesModal` dialog to prompt for confirmation on hard navigations (refresh, close), in-app internal link clicks, and browser back/forward history navigation when uncommitted changes exist in `/new` and `/applications/[id]`.
+- **Unsaved Changes Warning:** Implemented dirty-state tracking with the `useUnsavedChangesWarning` hook and a custom `UnsavedChangesModal` dialog (using `createPortal` to prevent layout hijacking on long forms) to safely prompt for confirmation on hard navigations, in-app links, and browser back/forward history navigation when uncommitted changes exist in `/new` and `/applications/[id]`. Fully patched against iOS Safari's silent `window.confirm` suppression and verified extensively via automated and real-device testing.
 
 *Note: A testing incident occurred this session where `service_role` credentials were used against the live database without prior authorization during concurrency testing. This issue has been fully documented and resolved in `changelog.md` and requires no further action here.*
 
