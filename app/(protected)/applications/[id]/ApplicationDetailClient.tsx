@@ -128,6 +128,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setIsDirty(true);
+    setToast(null);
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
@@ -143,6 +144,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
       const val = techInput.trim();
       if (val && !formData.tech_stack.includes(val)) {
         setIsDirty(true);
+        setToast(null);
         setFormData(prev => ({ ...prev, tech_stack: [...prev.tech_stack, val] }));
       }
       setTechInput("");
@@ -151,6 +153,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
 
   const removeTech = (tech: string) => {
     setIsDirty(true);
+    setToast(null);
     setFormData(prev => ({ ...prev, tech_stack: prev.tech_stack.filter((t: string) => t !== tech) }));
   };
 
@@ -439,11 +442,16 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
           </div>
         </section>
 
-        <div className="flex justify-end sticky bottom-4 z-10 pt-4">
+        <div className="flex flex-col sm:flex-row items-end sm:items-center justify-end gap-3 sticky bottom-4 z-10 pt-4 pointer-events-none">
+          {toast && (
+            <div className={`px-4 py-2 rounded-md text-sm font-medium shadow-md pointer-events-auto transition-opacity ${toast.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+              {toast.message}
+            </div>
+          )}
           <button
             type="submit"
             disabled={isSaving}
-            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:opacity-50 transition-colors shadow-lg"
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium disabled:opacity-50 transition-colors shadow-lg pointer-events-auto"
           >
             {isSaving ? "Saving..." : "Save Changes"}
           </button>
