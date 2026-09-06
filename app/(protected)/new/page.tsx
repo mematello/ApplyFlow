@@ -11,6 +11,7 @@ import { createApplication } from "../../../lib/data-source";
 import { normalizeTitleCase, normalizeSalaryInput } from "../../../lib/utils/format";
 import { useRef } from "react";
 import { useUnsavedChangesWarning } from "../../../hooks/useUnsavedChangesWarning";
+import UnsavedChangesModal from "../../../components/UnsavedChangesModal";
 
 import { AIModel } from "../../../lib/types";
 
@@ -26,7 +27,7 @@ export default function NewApplicationPage() {
   const [aiSuggestedFields, setAiSuggestedFields] = useState<Set<string>>(new Set());
 
   const [isDirty, setIsDirty] = useState(false);
-  useUnsavedChangesWarning(isDirty);
+  const { showModal, confirmNavigation, cancelNavigation } = useUnsavedChangesWarning(isDirty);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -793,6 +794,12 @@ export default function NewApplicationPage() {
       </form>
 
       <ResumePreviewModal resumeId={previewResumeId} onClose={() => setPreviewResumeId(null)} />
+
+      <UnsavedChangesModal
+        isOpen={showModal}
+        onConfirm={confirmNavigation}
+        onCancel={cancelNavigation}
+      />
     </div>
   );
 }

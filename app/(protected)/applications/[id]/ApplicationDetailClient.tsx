@@ -14,6 +14,7 @@ import { Application } from '../../../../lib/types';
 import { updateApplication, deleteApplication, fetchApplicationById } from '../../../../lib/data-source';
 import { normalizeTitleCase, normalizeSalaryInput } from '../../../../lib/utils/format';
 import { useUnsavedChangesWarning } from '../../../../hooks/useUnsavedChangesWarning';
+import UnsavedChangesModal from '../../../../components/UnsavedChangesModal';
 
 export default function ApplicationDetailClient({ initialApplication, isLocal, appId }: { initialApplication: Application | null, isLocal?: boolean, appId?: string }) {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
   const [isLoading, setIsLoading] = useState(isLocal && !initialApplication);
   
   const [isDirty, setIsDirty] = useState(false);
-  useUnsavedChangesWarning(isDirty);
+  const { showModal, confirmNavigation, cancelNavigation } = useUnsavedChangesWarning(isDirty);
   
   const [formData, setFormData] = useState({
     company_name: initialApplication?.company_name || "",
@@ -450,6 +451,11 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
       </form>
 
       <ResumePreviewModal resumeId={previewResumeId} onClose={() => setPreviewResumeId(null)} />
+      <UnsavedChangesModal
+        isOpen={showModal}
+        onConfirm={confirmNavigation}
+        onCancel={cancelNavigation}
+      />
       {typeof document !== "undefined" && createPortal(deleteModalContent, document.body)}
     </div>
   );

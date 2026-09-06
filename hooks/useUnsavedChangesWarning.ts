@@ -1,10 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
 export function useUnsavedChangesWarning(isDirty: boolean) {
+  const router = useRouter();
+  const [showModal, setShowModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{ type: 'back' | 'push', url?: string } | null>(null);
+  
+  const isNavigatingAway = useRef(false);
+
   useEffect(() => {
     // 1. Guard against hard navigations (refresh, close tab)
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!isDirty) return;
+      if (!isDirty || isNavigatingAway.current) return;
       e.preventDefault();
       e.returnValue = ''; // Required for some browsers
     };
@@ -19,7 +26,7 @@ export function useUnsavedChangesWarning(isDirty: boolean) {
   useEffect(() => {
     // 2. Guard against in-app link clicks
     const handleAnchorClick = (e: MouseEvent) => {
-      if (!isDirty) return;
+      if (!isDirty || isNavigatingAway.current) return;
 
       // Bypass modifier clicks (so user can open in new tab)
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) {
@@ -37,10 +44,10 @@ export function useUnsavedChangesWarning(isDirty: boolean) {
         return;
       }
 
-      if (!window.confirm("You have unsaved changes. Are you sure you want to leave?")) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      setPendingAction({ type: 'push', url: href });
+      setShowModal(true);
     };
 
     // Use capture phase to intercept before Next.js Link handles it
@@ -54,25 +61,20 @@ export function useUnsavedChangesWarning(isDirty: boolean) {
   useEffect(() => {
     // 3. Guard against browser Back/Forward (popstate)
     // We use the "guard state" pattern. When the form becomes dirty,
-    // we push a duplicate history entry. The first time the user clicks "Back",
-    // they consume this duplicate entry (URL doesn't change). We intercept that
-    // popstate and ask for confirmation.
+    // we push a duplicate history entry. The first time the user clicks "Back"
+    // or swipes back, they consume this duplicate entry (URL doesn't change).
+    // We intercept that popstate and show our custom modal.
     
     if (isDirty) {
       // Proactively push a guard state so the first back action doesn't change the URL
       window.history.pushState(null, '', window.location.href);
 
       const handlePopState = () => {
-        setTimeout(() => {
-          if (window.confirm("You have unsaved changes. Are you sure you want to leave?")) {
-            // User confirmed. We want to actually go back now.
-            window.removeEventListener('popstate', handlePopState);
-            window.history.back();
-          } else {
-            // User canceled. We need to re-insert the guard state for the next time they hit back.
-            window.history.pushState(null, '', window.location.href);
-          }
-        }, 0);
+        if (isNavigatingAway.current) return;
+
+        // User swiped or clicked back. Show our custom modal to confirm.
+        setPendingAction({ type: 'back' });
+        setShowModal(true);
       };
 
       window.addEventListener('popstate', handlePopState);
@@ -82,4 +84,28 @@ export function useUnsavedChangesWarning(isDirty: boolean) {
       };
     }
   }, [isDirty]);
+
+  const confirmNavigation = () => {
+    isNavigatingAway.current = true;
+    setShowModal(false);
+    
+    if (pendingAction?.type === 'push' && pendingAction.url) {
+      router.push(pendingAction.url);
+    } else if (pendingAction?.type === 'back') {
+      window.history.back();
+    }
+    setPendingAction(null);
+  };
+
+  const cancelNavigation = () => {
+    setShowModal(false);
+    if (pendingAction?.type === 'back') {
+      // User canceled back navigation. We must re-insert the guard state
+      // because they already consumed it when they swiped/clicked back.
+      window.history.pushState(null, '', window.location.href);
+    }
+    setPendingAction(null);
+  };
+
+  return { showModal, confirmNavigation, cancelNavigation };
 }
