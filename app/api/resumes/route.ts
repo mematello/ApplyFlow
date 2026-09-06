@@ -99,7 +99,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Database insertion failed: " + dbError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ data: resumeRecord });
+    return NextResponse.json({ 
+      data: resumeRecord,
+      extractionFailed: extractedText === null
+    });
   } catch (error: unknown) {
     console.error("Resume upload error:", error);
     return NextResponse.json({ error: (error as Error).message || "Internal server error" }, { status: 500 });

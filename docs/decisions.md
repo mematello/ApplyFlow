@@ -1,5 +1,10 @@
 # ApplyFlow — Decisions Log
 
+## [2026-09-06] Resume Extraction Silent-Failure UX
+- Context: The backend (`/api/resumes`) silently catches extraction failures and saves the resume with `extracted_text: null`. The frontend failed to surface this at upload time, and the `/new` extraction flow silently skipped match analysis without context.
+- Decision: Appended an `extractionFailed` boolean flag to the existing success response of `/api/resumes`, rather than treating it as a hard HTTP error (because the file upload itself succeeds). Added a persistent warning to the upload component, and updated the `/new` toast logic to explicitly differentiate between "no default resume" and "current resume lacks text".
+- Reasoning: Treating extraction failure as a hard error would break the primary intent (uploading the file), but failing to signal it leaves the user confused when downstream AI features (match analysis) silently fail to run.
+
 ## [2026-09-06] Unsaved Changes Navigation Guard (Custom Modal)
 - Context: Native `window.confirm()` was used in `popstate` to prevent users from losing unsaved changes via iOS Safari's swipe-back gesture.
 - Decision: Replaced `window.confirm()` with a custom React modal (`<UnsavedChangesModal />`) injected via `createPortal` to `document.body`.

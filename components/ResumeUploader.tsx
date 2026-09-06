@@ -16,12 +16,14 @@ export default function ResumeUploader({ onSuccess, forceIsCurrent = false }: Re
   const [isCurrentResume, setIsCurrentResume] = useState(forceIsCurrent);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [uploadWarning, setUploadWarning] = useState("");
 
   const handleUploadResume = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resumeFile || !versionLabel) return;
     setIsUploading(true);
     setUploadError("");
+    setUploadWarning("");
 
     const formData = new FormData();
     formData.append('file', resumeFile);
@@ -37,6 +39,12 @@ export default function ResumeUploader({ onSuccess, forceIsCurrent = false }: Re
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to upload resume");
+
+      if (data.extractionFailed) {
+        setUploadWarning("Upload successful, but text extraction failed. AI fit analysis will not run when using this resume.");
+      } else {
+        setUploadWarning("");
+      }
 
       // Reset local state first
       setResumeFile(null);
@@ -105,6 +113,7 @@ export default function ResumeUploader({ onSuccess, forceIsCurrent = false }: Re
         {isUploading ? "Uploading..." : "Upload Resume"}
       </button>
       {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
+      {uploadWarning && <p className="mt-3 text-sm text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 p-3 rounded-md border border-amber-200 dark:border-amber-900/50">{uploadWarning}</p>}
     </form>
   );
 }

@@ -370,7 +370,13 @@ export default function NewApplicationPage() {
           setToast({ message: "Extraction complete! (Match analysis failed)", type: 'error' });
         }
       } else {
-        setToast({ message: "Extraction complete!", type: 'success' });
+        if (!currentResume) {
+          setToast({ message: "Extraction complete! (No default resume set, skipping match analysis)", type: 'success' });
+        } else if (!currentResume.extracted_text) {
+          setToast({ message: "Extraction complete! (Current resume lacks text, skipping match analysis)", type: 'success' });
+        } else {
+          setToast({ message: "Extraction complete!", type: 'success' });
+        }
       }
 
       if (!hasGoogleKey && freeUses !== null && freeUses > 0) {

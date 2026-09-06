@@ -1,6 +1,7 @@
 # ApplyFlow — Changelog
 
 ## [2026-09-06] (Session 10)
+- Fixed: Addressed the silent-failure UX gap for resume extraction by adding a persistent inline warning to the resume uploader, and updated the job extraction flow (`/new`) to surface distinct toast messages when match analysis is skipped due to a missing resume or missing extracted text.
 - Fixed: Production email link bug in the cron route (was falling back to localhost) by leveraging a fallback chain using Vercel system environment variables (`VERCEL_PROJECT_PRODUCTION_URL`, `VERCEL_URL`).
 - Fixed: Renamed `processed` field to `fetched` in the `/api/cron/reminders` response to accurately reflect its meaning.
 - Fixed: Status badge truncation bug caused by `w-full` on the inner `<select>` element; removing it allows intrinsic width calculation, fixing clipping on longer statuses like "Screening".
