@@ -1,5 +1,25 @@
 # ApplyFlow — Decisions Log
 
+## [2026-09-06] Unsaved Changes Navigation Guard (Custom Modal)
+- Context: Native `window.confirm()` was used in `popstate` to prevent users from losing unsaved changes via iOS Safari's swipe-back gesture.
+- Decision: Replaced `window.confirm()` with a custom React modal (`<UnsavedChangesModal />`) injected via `createPortal` to `document.body`.
+- Reasoning: Safari silently suppresses `window.confirm` during gesture-triggered `popstate` events, returning `false` automatically. This instantly re-pushed the guard state, effectively trapping mobile users on the page with no UI. `createPortal` was also specifically chosen to prevent transformed ancestors from hijacking the modal's `fixed` positioning on long forms.
+
+## [2026-09-06] Unsaved Changes Dirty State Tracking
+- Context: Need to track whether the form has unsaved changes to trigger the navigation guard.
+- Decision: Opted for a simple boolean flag (`isDirty`) set on the first user interaction, rather than deep equality diffing against the initial state.
+- Trade-offs: Deep equality adds significant complexity (especially with AI-suggested fields) for a marginal cosmetic UX improvement (un-flagging `isDirty` if a user types and deletes a single character). The boolean flag perfectly fulfills the core requirement (preventing data loss) without introducing brittle comparison logic.
+
+## [2026-09-06] Textarea Sizing Platform Constraints
+- Context: Need textareas (`notes`, `interview_notes`) to be taller on mobile for better usability.
+- Decision: Used Tailwind `min-h-48 resize-y` across all long-form textareas. 
+- Constraint Noted: iOS Safari natively lacks support for the CSS `resize` property. Drag-resize is a desktop-only feature. The actual fix for mobile usability is the `min-h-48` class; the lack of a drag handle on iOS is a platform limitation, not a bug to be fixed.
+
+## [2026-09-06] Email URL Resolution Fallback Chain
+- Context: The cron reminder emails were constructing links using `process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'`, resulting in `localhost` links in production because Vercel doesn't auto-set `NEXT_PUBLIC_APP_URL`.
+- Decision: Implemented a robust `getBaseUrl()` helper fallback chain: `APP_URL` → `VERCEL_PROJECT_PRODUCTION_URL` → `VERCEL_URL` → `http://localhost:3000`.
+- Reasoning: Leverages Vercel's built-in system environment variables to guarantee a valid production URL without requiring manual env var configuration, while still allowing local overrides via `APP_URL`.
+
 ## [2026-09-05] Filter Row Redesign & Information Density
 - Context: The dashboard status filter row (10 chips) was overflowing on mobile and causing horizontal scroll bars on desktop, violating the design goal of a clean, app-like interface.
 - Decision: Replaced the 10 chips with an `[Active]` chip, `[All]` chip, and a status `<select>` dropdown.

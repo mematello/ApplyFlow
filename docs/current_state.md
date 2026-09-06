@@ -7,24 +7,20 @@ decisions.md instead. Replaces the handoff_context_sessionN.md chain.
 See architecture.md / decisions.md / schema.md / changelog.md for
 anything not called out below as recently changed.*
 
-*Last updated: 2026-09-05 (Session 9 - Follow-up)*
+*Last updated: 2026-09-06 (Session 10)*
 
 ## 1. Confirmed working / shipped
 
+- **Unsaved Changes Warning:** Implemented dirty-state tracking with the `useUnsavedChangesWarning` hook and a custom `UnsavedChangesModal` dialog (using `createPortal` to prevent layout hijacking on long forms) to safely prompt for confirmation on hard navigations, in-app links, and browser back/forward history navigation when uncommitted changes exist in `/new` and `/applications/[id]`. Fully patched against iOS Safari's silent `window.confirm` suppression and verified extensively via automated and real-device testing.
+- **Notes field mobile sizing:** Standardized long-form textareas (`notes`, `interview_notes`) to use `min-h-48 resize-y` across both `/new` and `/applications/[id]`, fixing cramped rendering on mobile viewports.
+- **Status Badge Truncation:** Fixed an intrinsic-width calculation bug in `DashboardClient.tsx` that was causing longer statuses like "Interview" and "Screening" to be clipped/truncated in some browsers.
+- **Email reminder link resolution:** Fixed a production bug where reminder emails linked to `localhost`. The `/api/cron/reminders` route now robustly resolves the domain via a fallback chain checking `APP_URL`, `VERCEL_PROJECT_PRODUCTION_URL`, and `VERCEL_URL`.
 - **Timezone-aware reminder emails:** Fully implemented, verified, and shipped. Includes timezone and time capture during Onboarding, editable preferences in Settings, and a self-healing `>=` time-match logic in the `/api/cron/reminders` cron route.
 - **Database Migrations:** The migration for `reminder_timezone` and `reminder_send_time` in `profiles`, and the migration adding the `ghosted` status to the `application_status` enum, were both successfully run against the live production database.
-- **External Cron Scheduler:** The `/api/cron/reminders` endpoint is now triggered by an external scheduler (cron-job.org) running every 1 minute. This replaces Vercel's native cron due to a known constraint: the Vercel Hobby plan strictly limits native cron execution to once daily.
-- **Cron Reminders:** Shifted execution to `cron-job.org` due to Vercel Hobby limits. Now accurately targets the user's localized time with an atomic check-and-set strategy. Resolved the production `localhost` email link issue by refactoring URL resolution to use Vercel system environment variables (`VERCEL_PROJECT_PRODUCTION_URL` and `VERCEL_URL`) instead of relying solely on manually defined `APP_URL`.
-- **Dashboard Enhancements:**
-  - **Pagination:** Added client-side pagination with 10/20/50/100 rows per page, persisting the user's preference in `localStorage`.
-  - **Sorting:** Default dashboard sort is now deterministic by `created_at DESC`, with fallback sorting logic to prevent jitter.
-  - **Filter UI Redesign:** Replaced the sprawling 10-chip horizontal overflow list with a streamlined `[Active]` chip, `[All]` chip, and a status dropdown for the remaining 8 statuses.
-  - **Default Filter:** The dashboard now filters by "Active" statuses by default (automatically hiding rejected, withdrawn, and ghosted applications).
-  - **Status Badge Fix:** Removed `w-full` from the inner `select` to fix a visual bug on the live deployment where longer statuses like "Interview" and "Screening" were getting truncated/clipped.
-- **Mobile UI Fixes:** Enabled manual drag-resizing (`resize-y`) and bumped the default minimum height for the `notes` and `interview_notes` textareas on mobile viewports so they don't render cramped.
-- **Unsaved Changes Warning:** Implemented dirty-state tracking with the `useUnsavedChangesWarning` hook and a custom `UnsavedChangesModal` dialog (using `createPortal` to prevent layout hijacking on long forms) to safely prompt for confirmation on hard navigations, in-app links, and browser back/forward history navigation when uncommitted changes exist in `/new` and `/applications/[id]`. Fully patched against iOS Safari's silent `window.confirm` suppression and verified extensively via automated and real-device testing.
+- **External Cron Scheduler:** The `/api/cron/reminders` endpoint is now triggered by an external scheduler (cron-job.org) running every 1 minute.
+- **Dashboard Enhancements:** Client-side pagination (with `localStorage` size preference), deterministic default sorting (`created_at DESC`), and a redesigned active-first Filter UI.
 
-*Note: A testing incident occurred this session where `service_role` credentials were used against the live database without prior authorization during concurrency testing. This issue has been fully documented and resolved in `changelog.md` and requires no further action here.*
+*Note: A testing incident occurred last session where `service_role` credentials were used against the live database without prior authorization during concurrency testing. This issue has been fully documented and resolved in `changelog.md` and requires no further action here.*
 
 ## 2. Open / blocking
 
@@ -34,7 +30,6 @@ anything not called out below as recently changed.*
 ## 3. Next steps, priority order
 
 **Backlog:**
-*(Carried forward unchanged from previous session)*
 1. Silent-failure UX — surface extraction failure at the `/new` upload step, not just Settings.
 2. Save-confirmation UX — no visible indicator that an application-detail edit saved successfully unless the user scrolls up; add inline/toast confirmation.
 3. "Source" field — convert to dropdown (LinkedIn, Indeed, JobStreet, Facebook, etc.) with free-text fallback.

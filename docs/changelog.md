@@ -1,5 +1,13 @@
 # ApplyFlow — Changelog
 
+## [2026-09-06] (Session 10)
+- Fixed: Production email link bug in the cron route (was falling back to localhost) by leveraging a fallback chain using Vercel system environment variables (`VERCEL_PROJECT_PRODUCTION_URL`, `VERCEL_URL`).
+- Fixed: Renamed `processed` field to `fetched` in the `/api/cron/reminders` response to accurately reflect its meaning.
+- Fixed: Status badge truncation bug caused by `w-full` on the inner `<select>` element; removing it allows intrinsic width calculation, fixing clipping on longer statuses like "Screening".
+- Fixed: Mobile layout constraint for `notes` and `interview_notes` textareas by increasing the default minimum height (`min-h-48`), standardizing cross-device usability despite iOS Safari's native lack of support for the `resize-y` property.
+- Implemented: Comprehensive Unsaved Changes navigation guard with a custom `<UnsavedChangesModal />` and dirty-state tracking (`useUnsavedChangesWarning`), intercepting hard navigations, in-app links, and browser back/forward history events across both `/new` and `/applications/[id]`.
+- Fixed: Unsaved Changes modal rendering issues. Replaced `window.confirm` with a custom modal rendered via `createPortal` directly to `document.body` to bypass Safari's silent blocking of native popups on swipe-back gestures and to immunize the modal against `position: fixed` layout hijacking by parent element transforms.
+
 ## [2026-08-29] (Session 9 - Continued)
 - Implemented: Timezone-aware reminders. Added timezone/time capture to Onboarding and Settings, and updated `/api/cron/reminders` to check local time matches rather than strict UTC dates.
 - Implemented: Dashboard client-side pagination, including user-preference persistence for page sizes.
