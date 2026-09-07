@@ -1,5 +1,11 @@
 # ApplyFlow — Changelog
 
+## [2026-09-07] (Session 11)
+- Fixed: Silent-failure UX at /new. Added an additive `extractionFailed` boolean to the `/api/resumes` success response (derived from the existing local `extractedText` variable, no new read). ResumeUploader now shows a persistent inline warning ("Upload successful, but text extraction failed. AI fit analysis will not run when using this resume.") identically in both its Settings and Onboarding usages.
+- Fixed: On `/new`, the extraction-complete toast when match analysis is skipped now distinguishes "No default resume set" from "Current resume lacks text" instead of a bare "Extraction complete!" that gave no explanation. Active `/api/match` failure toasts (429/503/other) were already handled correctly and were left untouched.
+- Fixed: Save-confirmation UX on `/applications/[id]`. Added a second, bottom-anchored toast next to the sticky "Save Changes" button so confirmation appears where the user is looking, without removing the existing top-of-page toast. Both toasts now clear on the next edit (`setToast(null)` added alongside all three existing `setIsDirty(true)` call sites) rather than persisting stale success messages through unsaved changes.
+- Confirmed: `/api/extract` and `/api/match` route logic were untouched by both fixes; verified absent from both diffs.
+
 ## [2026-09-06] (Session 10)
 - Fixed: Improved the save-confirmation UX on `/applications/[id]` by adding a bottom-anchored inline toast next to the "Save Changes" sticky button. Both top and bottom toasts now automatically dismiss when the user resumes editing the form.
 - Fixed: Addressed the silent-failure UX gap for resume extraction by adding a persistent inline warning to the resume uploader, and updated the job extraction flow (`/new`) to surface distinct toast messages when match analysis is skipped due to a missing resume or missing extracted text.

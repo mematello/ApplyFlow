@@ -1,5 +1,20 @@
 # ApplyFlow — Decisions Log
 
+## [2026-09-07] Resume Extraction Failure Signal — Additive API Field
+- Context: `/api/resumes` silently caught PDF/DOCX extraction errors and saved the resume with `extracted_text: null`, with no signal in the response at all. The only existing indicator was a red label in the Settings resume list, discoverable only after the fact.
+- Decision: Added `extractionFailed: boolean` to the existing success response (200), derived from the already-computed local `extractedText` variable. Non-breaking: response shape for the working case is unchanged.
+- Reasoning: The upload itself succeeds even when extraction fails, so this should surface as a warning at the point of action, not a hard error — consistent with treating file-upload success and text-extraction success as separate signals.
+
+## [2026-09-07] Save-Confirmation Toast — Additive, Not Relocated
+- Context: A save-confirmation toast already existed on `/applications/[id]` but rendered at the top of a long form while the sticky "Save Changes" button lives at the bottom — invisible in practice without scrolling up.
+- Decision: Added a second toast instance anchored next to the sticky save button, reusing the same `toast` state rather than introducing new state. The original top toast was left in place rather than relocated.
+- Rejected alternative: Auto-scrolling to the top on save. Rejected as inconsistent with how the app otherwise avoids overriding user scroll/navigation state (cf. the Unsaved Changes modal's respect for user-initiated navigation), and disruptive to anyone continuing to edit further down the page.
+
+## [2026-09-07] Save Toast Dismissal Tied to Existing Dirty-State Pattern
+- Context: With two toast instances now sharing one `toast` state, a successful save's confirmation could persist indefinitely as the user continued editing without saving again — including for tech-stack chip edits, which set `isDirty` via `handleTechKeyDown`/`removeTech` rather than `handleInputChange`.
+- Decision: `setToast(null)` added at all three existing `setIsDirty(true)` call sites (`handleInputChange`, `handleTechKeyDown`, `removeTech`), rather than a time-based auto-dismiss.
+- Reasoning: Mirrors the existing dirty-state convention (`decisions.md`, 2026-09-06: boolean flag set on first interaction, no deep-equality diffing) instead of introducing a new pattern. A stale "success" toast surviving through unsaved edits is misleading regardless of how long it's been on screen, so tying dismissal to the edit action itself is more correct than a timer.
+
 ## [2026-09-06] Save-Confirmation UX & Sticky Footer Toast
 - Context: The application detail save confirmation rendered at the top of the form, leaving users without immediate feedback when clicking the bottom-anchored sticky "Save Changes" button.
 - Decision: Reused the existing `toast` state to render an identical inline confirmation immediately adjacent to the "Save Changes" button. Added logic to automatically dismiss the toast (`setToast(null)`) across all three dirty-state functions (`handleInputChange`, `handleTechKeyDown`, `removeTech`) as soon as the user resumes editing.
