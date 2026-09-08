@@ -410,7 +410,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
                   {tech} <button type="button" onClick={() => removeTech(tech)} className="text-gray-400 dark:text-zinc-500 hover:text-gray-900 dark:text-zinc-100">&times;</button>
                 </span>
               ))}
-              <input type="text" value={techInput} onChange={e => setTechInput(e.target.value)} onKeyDown={handleTechKeyDown} placeholder="Type and press Enter..." className="bg-transparent border-none outline-none flex-1 text-sm min-w-[150px] text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:text-zinc-500" />
+              <input type="text" value={techInput} onChange={e => setTechInput(e.target.value)} onKeyDown={handleTechKeyDown} placeholder="Type and press Enter..." className="bg-transparent border-none outline-none flex-1 min-w-[150px] text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:text-zinc-500" />
             </div>
           </div>
         </section>

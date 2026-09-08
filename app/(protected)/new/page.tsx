@@ -752,7 +752,7 @@ export default function NewApplicationPage() {
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">
                   Role Fit (1-5)
@@ -810,7 +810,7 @@ export default function NewApplicationPage() {
                 onChange={e => setTechInput(e.target.value)}
                 onKeyDown={handleTechKeyDown}
                 placeholder="Type and press Enter or comma..."
-                className="bg-transparent border-none outline-none flex-1 text-sm min-w-[150px] text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:text-zinc-500"
+                className="bg-transparent border-none outline-none flex-1 min-w-[150px] text-gray-900 dark:text-zinc-100 placeholder:text-gray-400 dark:text-zinc-500"
               />
             </div>
           </div>
