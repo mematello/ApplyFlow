@@ -7,10 +7,11 @@ decisions.md instead. Replaces the handoff_context_sessionN.md chain.
 See architecture.md / decisions.md / schema.md / changelog.md for
 anything not called out below as recently changed.*
 
-*Last updated: 2026-09-07 (Session 11)*
+*Last updated: 2026-09-08 (Session 12)*
 
 ## 1. Confirmed working / shipped
 
+- **Ghosted status validation & UI parity:** Added `'ghosted'` to API Zod validation schemas (`PatchSchema`, `ApplicationInsertSchema`) and frontend dropdown menus in `/new` and `/applications/[id]`, fixing 400 Bad Request errors when saving applications in ghosted status.
 - **Silent-failure UX at /new:** Resume text-extraction failures are now surfaced at upload time (both Settings and Onboarding, via shared ResumeUploader) through a persistent inline warning, backed by a new additive `extractionFailed` flag on the `/api/resumes` success response. On `/new`, the extraction-complete toast now distinguishes "no default resume set" vs "current resume lacks text" instead of a bare success message when match analysis is silently skipped.
 - **Save-confirmation UX at /applications/[id]:** A save-confirmation toast now renders adjacent to the sticky "Save Changes" button at the bottom of the form, in addition to the existing top-of-page toast (additive, not a relocation). Both toasts now auto-clear the moment the user resumes editing (wired into all three state-dirtying functions: `handleInputChange`, `handleTechKeyDown`, `removeTech`), replacing the previous behavior where a stale success message could persist through unsaved edits.
 - **Unsaved Changes Warning:** Implemented dirty-state tracking with the `useUnsavedChangesWarning` hook and a custom `UnsavedChangesModal` dialog (using `createPortal` to prevent layout hijacking on long forms) to safely prompt for confirmation on hard navigations, in-app links, and browser back/forward history navigation when uncommitted changes exist in `/new` and `/applications/[id]`. Fully patched against iOS Safari's silent `window.confirm` suppression and verified extensively via automated and real-device testing.

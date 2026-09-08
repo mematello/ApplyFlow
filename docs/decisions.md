@@ -1,5 +1,10 @@
 # ApplyFlow — Decisions Log
 
+## [2026-09-08] Ghosted Status Validation & UI Sync
+- Context: The "ghosted" status was previously added to the database enum and the Dashboard filter, but was omitted from the Zod validation schemas (`PatchSchema`, `ApplicationInsertSchema`) and the individual application edit/create UI dropdowns. This caused optimistic UI updates to fail with a 400 error on save.
+- Decision: Added `'ghosted'` to the Zod schemas and the `<select>` options in `ApplicationDetailClient.tsx` and `page.tsx` to achieve full parity across the application stack.
+- Reasoning: A database enum addition must always be accompanied by corresponding updates to API boundary validation schemas and frontend forms to prevent validation failures.
+
 ## [2026-09-07] Resume Extraction Failure Signal — Additive API Field
 - Context: `/api/resumes` silently caught PDF/DOCX extraction errors and saved the resume with `extracted_text: null`, with no signal in the response at all. The only existing indicator was a red label in the Settings resume list, discoverable only after the fact.
 - Decision: Added `extractionFailed: boolean` to the existing success response (200), derived from the already-computed local `extractedText` variable. Non-breaking: response shape for the working case is unchanged.

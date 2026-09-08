@@ -15,7 +15,7 @@ const PatchSchema = z.object({
   contact_info: z.string().nullable(),
   notes: z.string().nullable(),
   date_applied: z.string().nullable(),
-  status: z.enum(['draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn']),
+  status: z.enum(['draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn', 'ghosted']),
   job_link: z.string().nullable(),
   priority: z.enum(['low', 'medium', 'high']).nullable(),
   resume_version: z.string().nullable(),

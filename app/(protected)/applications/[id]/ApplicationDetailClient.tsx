@@ -382,7 +382,7 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
               <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Status</label>
               <select name="status" value={formData.status} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100">
                 <option value="draft">Draft</option><option value="applied">Applied</option><option value="screening">Screening</option>
-                <option value="interview">Interview</option><option value="offer">Offer</option><option value="rejected">Rejected</option><option value="withdrawn">Withdrawn</option>
+                <option value="interview">Interview</option><option value="offer">Offer</option><option value="rejected">Rejected</option><option value="withdrawn">Withdrawn</option><option value="ghosted">Ghosted</option>
               </select>
             </div>
             <div>

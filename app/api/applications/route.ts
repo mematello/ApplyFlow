@@ -14,7 +14,7 @@ const ApplicationInsertSchema = z.object({
   contact_info: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   date_applied: z.string().nullable().optional(),
-  status: z.enum(['draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn']).default('draft'),
+  status: z.enum(['draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn', 'ghosted']).default('draft'),
   job_link: z.string().nullable().optional(),
   priority: z.enum(['low', 'medium', 'high']).nullable().optional(),
   resume_version: z.string().nullable().optional(),

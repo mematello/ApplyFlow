@@ -690,6 +690,7 @@ export default function NewApplicationPage() {
                 <option value="offer">Offer</option>
                 <option value="rejected">Rejected</option>
                 <option value="withdrawn">Withdrawn</option>
+                <option value="ghosted">Ghosted</option>
               </select>
             </div>
 

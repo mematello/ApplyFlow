@@ -1,5 +1,8 @@
 # ApplyFlow — Changelog
 
+## [2026-09-08] (Session 12)
+- Fixed: Resolved the 400 Bad Request error when saving an application with the "Ghosted" status by adding `'ghosted'` to the API Zod validation schemas (`PatchSchema` and `ApplicationInsertSchema`). Added the missing "Ghosted" option to the frontend status dropdowns on both the application detail page and the `/new` route to match the Dashboard's status list.
+
 ## [2026-09-07] (Session 11)
 - Fixed: Silent-failure UX at /new. Added an additive `extractionFailed` boolean to the `/api/resumes` success response (derived from the existing local `extractedText` variable, no new read). ResumeUploader now shows a persistent inline warning ("Upload successful, but text extraction failed. AI fit analysis will not run when using this resume.") identically in both its Settings and Onboarding usages.
 - Fixed: On `/new`, the extraction-complete toast when match analysis is skipped now distinguishes "No default resume set" from "Current resume lacks text" instead of a bare "Extraction complete!" that gave no explanation. Active `/api/match` failure toasts (429/503/other) were already handled correctly and were left untouched.
