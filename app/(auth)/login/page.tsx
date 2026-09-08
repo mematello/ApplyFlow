@@ -56,7 +56,7 @@ export default function LoginPage() {
       
       let errMsg = error.message;
       if (!errMsg || (typeof errMsg === 'string' && errMsg === '{}') || typeof errMsg === 'object') {
-        errMsg = "Error sending confirmation email. If using Resend sandbox, ensure this email is verified.";
+        errMsg = "Something went wrong sending the confirmation email. Please try again in a moment.";
       }
 
       if (typeof errMsg === 'string' && errMsg.toLowerCase().includes("signups not allowed")) {

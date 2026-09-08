@@ -41,8 +41,7 @@ export default function PrivacyPage() {
         <ul className="list-disc pl-5 space-y-2">
           <li><strong>Google Gemini API:</strong> Acts as our AI processor. The raw job descriptions and extracted resume text are sent to Gemini to generate structured data and fit scores. Note: Even if you use the &quot;Bring Your Own Key&quot; (BYOK) feature, your data still transits through Google&apos;s infrastructure.</li>
           <li><strong>Supabase:</strong> Our backend provider. For authenticated users, Supabase handles database storage, authentication, and secure file hosting for resumes (Supabase Storage).</li>
-          <li><strong>Gmail SMTP:</strong> Used to deliver authentication magic links to your account email.</li>
-          <li><strong>Resend:</strong> Used exclusively by our scheduled cron jobs to send you optional follow-up reminder emails regarding your applications.</li>
+          <li><strong>Gmail SMTP:</strong> Used to deliver authentication magic links and optional follow-up reminder emails regarding your applications.</li>
         </ul>
       </section>
 
