@@ -252,7 +252,7 @@ ${resumeText}
           continue;
         } else {
           console.error("[Match API] Error (Terminal):", parsedErr.message);
-          return NextResponse.json({ error: 'Failed to analyze match.', details: parsedErr.message }, { status: 500 });
+          return NextResponse.json({ error: 'Failed to analyze match.', details: parsedErr.message }, { status: 422 });
         }
       }
     }
