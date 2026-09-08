@@ -9,6 +9,7 @@ import Link from "next/link";
 import { User } from "@supabase/supabase-js";
 import { createApplication } from "../../../lib/data-source";
 import { normalizeTitleCase, normalizeSalaryInput } from "../../../lib/utils/format";
+import { SOURCE_OPTIONS, matchSourceOption } from "../../../lib/constants";
 import { useRef } from "react";
 import { useUnsavedChangesWarning } from "../../../hooks/useUnsavedChangesWarning";
 import UnsavedChangesModal from "../../../components/UnsavedChangesModal";
@@ -25,6 +26,7 @@ export default function NewApplicationPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [aiSuggestedFields, setAiSuggestedFields] = useState<Set<string>>(new Set());
+  const [explicitOther, setExplicitOther] = useState(false);
 
   const [isDirty, setIsDirty] = useState(false);
   const { showModal, confirmNavigation, cancelNavigation } = useUnsavedChangesWarning(isDirty);
@@ -292,6 +294,15 @@ export default function NewApplicationPage() {
         setActiveModelName(extractModelUsed);
       }
 
+      // Process extracted source
+      const extractedSource = (extracted.source as string) || "";
+      const sourceMatch = matchSourceOption(extractedSource);
+      if (sourceMatch.option === "Other") {
+        setExplicitOther(true);
+      } else {
+        setExplicitOther(false);
+      }
+
       // Single atomic form state update using loose null checks (!= null)
       const newSuggested = new Set<string>();
 
@@ -313,7 +324,7 @@ export default function NewApplicationPage() {
           role: (extracted.role as string) || "",
           tech_stack: (extracted.tech_stack as string[]) || [],
           location: (extracted.location as string) || "",
-          source: (extracted.source as string) || "",
+          source: sourceMatch.option === "Other" ? sourceMatch.freeText : sourceMatch.option,
           recruiter_name: (extracted.recruiter_name as string) || "",
           contact_info: (extracted.contact_info as string) || "",
           notes: (extracted.notes as string) || "",
@@ -673,8 +684,37 @@ export default function NewApplicationPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Source (e.g. LinkedIn)</label>
-              <input type="text" name="source" value={formData.source} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
+              <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Source</label>
+              <select 
+                value={explicitOther || (!SOURCE_OPTIONS.some(o => o.value !== "Other" && o.value === formData.source) && formData.source) ? "Other" : (SOURCE_OPTIONS.some(o => o.value !== "Other" && o.value === formData.source) ? formData.source : "")} 
+                onChange={(e) => {
+                  setIsDirty(true);
+                  const val = e.target.value;
+                  if (val === "Other") {
+                    setExplicitOther(true);
+                    setFormData(prev => ({ ...prev, source: "" }));
+                  } else {
+                    setExplicitOther(false);
+                    setFormData(prev => ({ ...prev, source: val }));
+                  }
+                }}
+                className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100"
+              >
+                <option value="">Select a source...</option>
+                {SOURCE_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              {(explicitOther || (!SOURCE_OPTIONS.some(o => o.value !== "Other" && o.value === formData.source) && formData.source)) ? (
+                <input 
+                  type="text" 
+                  name="source" 
+                  value={formData.source} 
+                  onChange={handleInputChange} 
+                  placeholder="Please specify"
+                  className="w-full p-2 mt-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" 
+                />
+              ) : null}
             </div>
           </div>
 

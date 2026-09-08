@@ -13,6 +13,7 @@ import { useRef } from 'react';
 import { Application } from '../../../../lib/types';
 import { updateApplication, deleteApplication, fetchApplicationById } from '../../../../lib/data-source';
 import { normalizeTitleCase, normalizeSalaryInput } from '../../../../lib/utils/format';
+import { SOURCE_OPTIONS } from '../../../../lib/constants';
 import { useUnsavedChangesWarning } from '../../../../hooks/useUnsavedChangesWarning';
 import UnsavedChangesModal from '../../../../components/UnsavedChangesModal';
 
@@ -24,6 +25,11 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
   
   const [isDirty, setIsDirty] = useState(false);
   const { showModal, confirmNavigation, cancelNavigation } = useUnsavedChangesWarning(isDirty);
+
+  const [explicitOther, setExplicitOther] = useState(() => {
+    if (!initialApplication?.source) return false;
+    return !SOURCE_OPTIONS.some(o => o.value !== "Other" && o.value === initialApplication.source);
+  });
   
   const [formData, setFormData] = useState({
     company_name: initialApplication?.company_name || "",
@@ -89,6 +95,9 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
           const app = await fetchApplicationById(null, appId);
           if (app) {
             setApplicationData(app);
+            if (app.source) {
+              setExplicitOther(!SOURCE_OPTIONS.some(o => o.value !== "Other" && o.value === app.source));
+            }
             setFormData({
               company_name: app.company_name || "",
               role: app.role || "",
@@ -357,7 +366,39 @@ export default function ApplicationDetailClient({ initialApplication, isLocal, a
               </div>
               <input type="url" name="job_link" value={formData.job_link} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" />
             </div>
-            <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Source</label><input type="text" name="source" value={formData.source} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
+            <div>
+              <label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Source</label>
+              <select 
+                value={explicitOther || (!SOURCE_OPTIONS.some(o => o.value !== "Other" && o.value === formData.source) && formData.source) ? "Other" : (SOURCE_OPTIONS.some(o => o.value !== "Other" && o.value === formData.source) ? formData.source : "")} 
+                onChange={(e) => {
+                  setIsDirty(true);
+                  const val = e.target.value;
+                  if (val === "Other") {
+                    setExplicitOther(true);
+                    setFormData(prev => ({ ...prev, source: "" }));
+                  } else {
+                    setExplicitOther(false);
+                    setFormData(prev => ({ ...prev, source: val }));
+                  }
+                }}
+                className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100"
+              >
+                <option value="">Select a source...</option>
+                {SOURCE_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              {(explicitOther || (!SOURCE_OPTIONS.some(o => o.value !== "Other" && o.value === formData.source) && formData.source)) ? (
+                <input 
+                  type="text" 
+                  name="source" 
+                  value={formData.source} 
+                  onChange={handleInputChange} 
+                  placeholder="Please specify"
+                  className="w-full p-2 mt-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" 
+                />
+              ) : null}
+            </div>
             <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Recruiter Name</label><input type="text" name="recruiter_name" value={formData.recruiter_name} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
             <div><label className="block text-sm text-gray-600 dark:text-zinc-400 mb-1">Contact Info</label><input type="text" name="contact_info" value={formData.contact_info} onChange={handleInputChange} className="w-full p-2 rounded-md bg-white dark:bg-zinc-900 border border-gray-300 dark:border-zinc-700 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 dark:text-zinc-100" /></div>
           </div>
