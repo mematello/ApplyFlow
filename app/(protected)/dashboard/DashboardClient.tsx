@@ -23,6 +23,7 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
   const router = useRouter();
   const [applications, setApplications] = useState<Application[]>(initialApplications);
   const [filter, setFilter] = useState<string>("Active");
+  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortField, setSortField] = useState<string>("created_at");
   const [sortAsc, setSortAsc] = useState<boolean>(false); // false = descending by default
@@ -211,7 +212,7 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
           />
         </div>
         
-        <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto hide-scrollbar items-center">
+        <div className="flex gap-2 flex-wrap pb-2 md:pb-0 w-full md:w-auto items-center">
           {['Active', 'All'].map(status => (
             <button
               key={status}
@@ -225,25 +226,48 @@ export default function DashboardClient({ initialApplications, isLocal }: { init
           ))}
           
           <div className="relative">
-            <select
-              value={['Active', 'All'].includes(filter) ? "" : filter}
-              onChange={(e) => setFilter(e.target.value)}
+            <button
+              type="button"
+              onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
               className={`appearance-none pl-4 pr-10 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus:ring-2 focus:ring-blue-500 ${
                 !['Active', 'All'].includes(filter) 
                   ? 'bg-gray-900 text-white border border-transparent dark:bg-zinc-100 dark:text-zinc-900 shadow-sm' 
                   : 'bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-gray-200 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200'
               }`}
             >
-              <option value="" disabled className="bg-white text-gray-900 dark:bg-zinc-900 dark:text-zinc-100">Filter by status</option>
-              {['draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn', 'ghosted'].map(status => (
-                <option key={status} value={status} className="bg-white text-gray-900 dark:bg-zinc-900 dark:text-zinc-100">
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-              <ChevronDown className={`w-4 h-4 transition-colors ${!['Active', 'All'].includes(filter) ? 'text-gray-300 dark:text-zinc-600' : 'text-gray-400 dark:text-zinc-500'}`} />
-            </div>
+              {['Active', 'All'].includes(filter) ? "Filter by status" : filter.charAt(0).toUpperCase() + filter.slice(1)}
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <ChevronDown className={`w-4 h-4 transition-transform ${isStatusDropdownOpen ? 'rotate-180' : ''} ${!['Active', 'All'].includes(filter) ? 'text-gray-300 dark:text-zinc-600' : 'text-gray-400 dark:text-zinc-500'}`} />
+              </div>
+            </button>
+            
+            {isStatusDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setIsStatusDropdownOpen(false)}></div>
+                <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-gray-100 dark:border-zinc-700 z-20 overflow-hidden transform origin-top-right transition-all">
+                  <div className="p-2 space-y-1">
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Filter by status
+                    </div>
+                    {['draft', 'applied', 'screening', 'interview', 'offer', 'rejected', 'withdrawn', 'ghosted'].map(status => (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() => {
+                          setFilter(status);
+                          setIsStatusDropdownOpen(false);
+                        }}
+                        className={`w-full text-left flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
+                          filter === status ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-zinc-200 hover:bg-gray-50 dark:hover:bg-zinc-700/50'
+                        }`}
+                      >
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
