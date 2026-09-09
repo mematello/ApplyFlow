@@ -1,5 +1,15 @@
 # ApplyFlow — Decisions Log
 
+## [2026-09-08] Source field dropdown design
+- Context: Source field needed to be converted from free text to a dropdown.
+- Decision: Chose dropdown+free-text-fallback with substring/keyword AI-auto-match over a strict fixed dropdown. Rejected two keywords ("direct", "meta") from the initial keyword list during plan review for false-positive risk.
+- Reasoning: `/api/extract` returns open-ended text and a strict list would silently discard or block legitimate AI-extracted values.
+
+## [2026-09-08] Dashboard dropdown
+- Context: Needed to replace the native `<select>` for the dashboard status filter.
+- Decision: Chose to replicate the existing custom button+dropdown pattern (from the model selector) over adopting shadcn/ui.
+- Reasoning: shadcn isn't currently a dependency anywhere in this codebase and introducing it for one dropdown wasn't worth the new surface area.
+
 ## [2026-09-08] Ghosted Status Validation & UI Sync
 - Context: The "ghosted" status was previously added to the database enum and the Dashboard filter, but was omitted from the Zod validation schemas (`PatchSchema`, `ApplicationInsertSchema`) and the individual application edit/create UI dropdowns. This caused optimistic UI updates to fail with a 400 error on save.
 - Decision: Added `'ghosted'` to the Zod schemas and the `<select>` options in `ApplicationDetailClient.tsx` and `page.tsx` to achieve full parity across the application stack.

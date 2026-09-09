@@ -1,5 +1,13 @@
 # ApplyFlow — Changelog
 
+## [2026-09-08] (Session 13)
+- Fixed: ghosted status update failure — added to PatchSchema and ApplicationInsertSchema in both app/api/applications/[id]/route.ts and app/api/applications/route.ts; added the missing dropdown option to ApplicationDetailClient.tsx and new/page.tsx.
+- Implemented: Source field converted from free text to a dropdown (LinkedIn/Indeed/JobStreet/Facebook/Company Website/Referral/Other) with free-text fallback, plus AI auto-match on extraction via new lib/constants.ts (SOURCE_OPTIONS, matchSourceOption). No DB/schema changes; /api/extract untouched.
+- Fixed: Removed stale Resend-sandbox copy from login/page.tsx, signup/page.tsx error fallbacks, and merged the outdated Resend privacy-policy bullet into the existing Gmail SMTP entry.
+- Fixed: Mobile layout inconsistencies — Role Fit/Culture Fit grid on /new now responsive (grid-cols-1 md:grid-cols-2), removed text-sm from tech-stack inputs on both /new and /applications/[id] to prevent iOS Safari auto-zoom-on-focus.
+- Fixed: /api/match terminal-error response now returns 422 instead of 500, aligning with /api/extract's existing convention and /api/match's own input-validation responses.
+- Fixed: Dashboard status filter — replaced native <select> (whose option-popup border/corners were partially unstyleable via CSS) with a custom button+dropdown pattern matching the existing AI-model-selector dropdown in new/page.tsx. Also fixed an incidental clipping bug found during implementation: the parent container's overflow-x-auto was clipping the absolute-positioned panel; swapped to flex-wrap.
+
 ## [2026-09-08] (Session 12)
 - Fixed: Resolved the 400 Bad Request error when saving an application with the "Ghosted" status by adding `'ghosted'` to the API Zod validation schemas (`PatchSchema` and `ApplicationInsertSchema`). Added the missing "Ghosted" option to the frontend status dropdowns on both the application detail page and the `/new` route to match the Dashboard's status list.
 
