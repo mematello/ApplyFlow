@@ -15,25 +15,24 @@ export default async function DashboardPage() {
   let applications = [];
 
   if (user) {
-    // Check for profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .single();
+    let profile;
+    try {
+      const [profileResult, applicationsResult] = await Promise.all([
+        supabase.from('profiles').select('full_name').eq('id', user.id).single(),
+        getCachedApplications(user.id),
+      ]);
+      profile = profileResult.data;
+      applications = applicationsResult;
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+      return <div className="p-8 text-red-500 dark:text-red-400">Failed to load applications.</div>;
+    }
 
     if (!profile) {
       redirect('/onboarding');
     }
 
     firstName = profile.full_name.split(' ')[0];
-
-    try {
-      applications = await getCachedApplications(user.id);
-    } catch (error) {
-      console.error("Error fetching applications:", error);
-      return <div className="p-8 text-red-500 dark:text-red-400">Failed to load applications.</div>;
-    }
   }
 
   return (
