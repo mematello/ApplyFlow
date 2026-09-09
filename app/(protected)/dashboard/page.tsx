@@ -1,4 +1,5 @@
 import { createClient } from '../../../lib/supabase/server';
+import { getCachedApplications } from '../../../lib/cache/applications';
 import { redirect } from 'next/navigation';
 import DashboardClient from './DashboardClient';
 import Link from 'next/link';
@@ -27,18 +28,12 @@ export default async function DashboardPage() {
 
     firstName = profile.full_name.split(' ')[0];
 
-    // Fetch applications for the authenticated user, ordered by date_applied descending
-    const { data: fetchedApps, error } = await supabase
-      .from('applications')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      applications = await getCachedApplications(user.id);
+    } catch (error) {
       console.error("Error fetching applications:", error);
       return <div className="p-8 text-red-500 dark:text-red-400">Failed to load applications.</div>;
     }
-    applications = fetchedApps || [];
   }
 
   return (

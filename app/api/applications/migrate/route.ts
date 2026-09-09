@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '../../../../lib/supabase/server';
 import { Application } from '../../../../lib/types';
 
@@ -105,6 +106,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Failed to insert new migrated applications' }, { status: 500 });
       }
     }
+
+    revalidateTag(`applications-${user.id}`);
 
     return NextResponse.json({ success: true, inserted: newRecordsToInsert.length, updated: existingRecordsToUpdate.length }, { status: 200 });
 

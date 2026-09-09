@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { createClient } from '../../../../lib/supabase/server';
 import { z } from 'zod';
 
@@ -76,6 +77,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
+    revalidateTag(`applications-${user.id}`);
+
     return NextResponse.json({ data });
 
   } catch (err: unknown) {
@@ -107,6 +110,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
+
+    revalidateTag(`applications-${user.id}`);
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
