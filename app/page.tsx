@@ -16,12 +16,12 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 font-sans">
-      
+
       {/* Header */}
       <header className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6 py-4 max-w-7xl mx-auto w-full">
         <Link href="/" className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
           <Image src="/images/uppend-logo.jpg" alt="Uppend Logo" width={32} height={32} className="rounded-md object-contain shadow-sm" />
-          <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+          <span className="text-xl font-bold text-black dark:text-white">
             Uppend
           </span>
         </Link>
@@ -37,14 +37,14 @@ export default function Home() {
       </header>
 
       <main className="flex flex-col items-center max-w-7xl mx-auto w-full px-6 pb-24">
-        
+
         {/* Hero Section */}
         <section className="flex flex-col items-center text-center mt-6 md:mt-24 mb-20 w-full max-w-4xl">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">
             Track your job applications with AI.
           </h1>
           <p className="text-lg md:text-xl text-gray-600 dark:text-zinc-400 mb-10 max-w-2xl">
-            Streamline your search. Paste the job description, let AI extract the details, 
+            Streamline your search. Paste the job description, let AI extract the details,
             assess your fit, and remind you to follow up.
           </p>
           <Link href="/signup" className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-lg font-medium shadow-md transition-transform hover:-translate-y-0.5">
@@ -52,12 +52,12 @@ export default function Home() {
           </Link>
 
           <div className="mt-16 w-full rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-800 shadow-2xl bg-zinc-50 dark:bg-zinc-900">
-            <video 
-              src="/videos/uppend-vid-demo.mp4" 
-              autoPlay 
-              loop 
-              muted 
-              playsInline 
+            <video
+              src="/videos/uppend-vid-demo.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
               className="w-full h-auto"
             />
           </div>
@@ -81,9 +81,9 @@ export default function Home() {
                 Found a job you like? Just paste the raw job description text.
               </p>
               <div className="w-full aspect-[4/3] relative rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-                <Image 
-                  src="/images/new_job_application.png" 
-                  alt="New job application form" 
+                <Image
+                  src="/images/new_job_application.png"
+                  alt="New job application form"
                   fill
                   className="object-cover object-top"
                 />
@@ -100,9 +100,9 @@ export default function Home() {
                 We automatically extract the details and score the job against your resume.
               </p>
               <div className="w-full aspect-[4/3] relative rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-                <Image 
-                  src="/images/ai_fit_analysis.png" 
-                  alt="AI fit analysis" 
+                <Image
+                  src="/images/ai_fit_analysis.png"
+                  alt="AI fit analysis"
                   fill
                   className="object-cover object-top"
                 />
@@ -119,9 +119,9 @@ export default function Home() {
                 Move applications through your pipeline and never miss a follow-up.
               </p>
               <div className="w-full aspect-[4/3] relative rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-                <Image 
-                  src="/images/dashboard.png" 
-                  alt="Application dashboard" 
+                <Image
+                  src="/images/dashboard.png"
+                  alt="Application dashboard"
                   fill
                   className="object-cover object-left-top"
                 />
@@ -176,9 +176,9 @@ export default function Home() {
             </ul>
           </div>
           <div className="flex-1 w-full max-w-md rounded-xl border border-gray-200 dark:border-zinc-800 overflow-hidden shadow-lg rotate-2 hover:rotate-0 transition-transform duration-300">
-            <Image 
-              src="/images/reminder_notification.jpg" 
-              alt="Follow-up reminder" 
+            <Image
+              src="/images/reminder_notification.jpg"
+              alt="Follow-up reminder"
               width={600}
               height={400}
               className="w-full h-auto object-cover"

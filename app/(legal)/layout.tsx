@@ -13,7 +13,7 @@ export default function LegalLayout({
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
             <Image src="/images/uppend-logo.jpg" alt="Uppend Logo" width={32} height={32} className="rounded-md object-contain shadow-sm" />
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+            <span className="text-xl font-bold text-black dark:text-white">
               Uppend
             </span>
           </Link>
