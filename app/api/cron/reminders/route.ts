@@ -128,14 +128,14 @@ export async function GET(req: Request) {
         
         try {
           const info = await emailTransporter.sendMail({
-            from: `"ApplyFlow Reminders" <${process.env.SMTP_EMAIL || 'applyflow.noreply@gmail.com'}>`,
+            from: `"Uppend Reminders" <${process.env.SMTP_EMAIL || 'applyflow.noreply@gmail.com'}>`,
             to: email,
             subject: `Reminder: ${action} with ${app.company_name}`,
             html: `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f9fafb; padding: 40px 20px; color: #111827;">
                 <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
                   <div style="padding: 32px; text-align: center; border-bottom: 1px solid #e5e7eb;">
-                    <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">ApplyFlow</h1>
+                    <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #111827; letter-spacing: -0.5px;">Uppend</h1>
                   </div>
                   <div style="padding: 32px;">
                     <p style="margin-top: 0; margin-bottom: 24px; font-size: 16px; line-height: 24px; color: #374151;">

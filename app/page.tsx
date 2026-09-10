@@ -4,10 +4,10 @@ import { Metadata } from "next";
 import { ThemeToggle } from "../components/ThemeToggle";
 
 export const metadata: Metadata = {
-  title: "ApplyFlow — AI-Powered Job Application Tracker",
+  title: "Uppend — AI-Powered Job Application Tracker",
   description: "Streamline your job search. Paste the job description, let AI extract the details, assess your fit, and remind you to follow up.",
   openGraph: {
-    title: "ApplyFlow — AI-Powered Job Application Tracker",
+    title: "Uppend — AI-Powered Job Application Tracker",
     description: "Streamline your job search. Paste the job description, let AI extract the details, assess your fit, and remind you to follow up.",
     images: ["/images/dashboard.png"],
   },
@@ -20,7 +20,7 @@ export default function Home() {
       {/* Header */}
       <header className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6 py-4 max-w-7xl mx-auto w-full">
         <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent w-full sm:w-auto text-center sm:text-left">
-          ApplyFlow
+          Uppend
         </div>
         <nav className="flex flex-wrap justify-center sm:justify-end items-center gap-2 sm:gap-4 w-full sm:w-auto">
           <ThemeToggle />
@@ -50,7 +50,7 @@ export default function Home() {
 
           <div className="mt-16 w-full rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-800 shadow-2xl bg-zinc-50 dark:bg-zinc-900">
             <video 
-              src="/videos/applyflow-vid-demo.mp4" 
+              src="/videos/uppend-vid-demo.mp4" 
               autoPlay 
               loop 
               muted 
@@ -129,12 +129,12 @@ export default function Home() {
 
         {/* Origin Story */}
         <section className="w-full max-w-3xl mx-auto py-16 mb-8 text-center">
-          <h2 className="text-3xl font-bold mb-6">Why I built ApplyFlow</h2>
+          <h2 className="text-3xl font-bold mb-6">Why I built Uppend</h2>
           <p className="text-lg text-gray-600 dark:text-zinc-400 leading-relaxed mb-6">
-            I built ApplyFlow after tracking 100+ job applications in a messy spreadsheet. It was exhausting to manually copy-paste details, remember when to follow up, and tailor my resume to every role.
+            I built Uppend after tracking 100+ job applications in a messy spreadsheet. It was exhausting to manually copy-paste details, remember when to follow up, and tailor my resume to every role.
           </p>
           <p className="text-lg text-gray-600 dark:text-zinc-400 leading-relaxed">
-            ApplyFlow solves this by letting AI do the heavy lifting—extracting job details and assessing your fit instantly, so you can focus on what matters: landing the job.
+            Uppend solves this by letting AI do the heavy lifting—extracting job details and assessing your fit instantly, so you can focus on what matters: landing the job.
           </p>
         </section>
 
@@ -197,7 +197,7 @@ export default function Home() {
           <Link href="/privacy" className="hover:text-gray-900 dark:hover:text-zinc-300">Privacy Policy</Link>
         </div>
         <p className="text-sm text-gray-400 dark:text-zinc-600">
-          &copy; {new Date().getFullYear()} ApplyFlow. All rights reserved.
+          &copy; {new Date().getFullYear()} Uppend. All rights reserved.
         </p>
       </footer>
 

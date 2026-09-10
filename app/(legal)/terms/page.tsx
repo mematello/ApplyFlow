@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | ApplyFlow',
-  description: 'Terms of Service for ApplyFlow',
+  title: 'Terms of Service | Uppend',
+  description: 'Terms of Service for Uppend',
 };
 
 export default function TermsPage() {
@@ -20,7 +20,7 @@ export default function TermsPage() {
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4">1. Acceptance of Terms</h2>
         <p>
-          By accessing and using ApplyFlow (&quot;Service&quot;), you accept and agree to be bound by the terms and provision of this agreement. 
+          By accessing and using Uppend (&quot;Service&quot;), you accept and agree to be bound by the terms and provision of this agreement. 
           If you do not agree to abide by these terms, please do not use this Service.
         </p>
       </section>
@@ -28,7 +28,7 @@ export default function TermsPage() {
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4">2. Description of Service</h2>
         <p>
-          ApplyFlow is an AI-powered job application tracker that allows users to extract job descriptions, analyze resume fit, and track applications.
+          Uppend is an AI-powered job application tracker that allows users to extract job descriptions, analyze resume fit, and track applications.
           The Service is provided &quot;as is&quot; and on an &quot;as available&quot; basis.
         </p>
       </section>
@@ -36,7 +36,7 @@ export default function TermsPage() {
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4">3. User Data & Privacy</h2>
         <p>
-          Your use of the Service is also governed by our Privacy Policy. By using ApplyFlow, you consent to the practices detailed in our Privacy Policy, including the processing of text and resumes via third-party AI APIs.
+          Your use of the Service is also governed by our Privacy Policy. By using Uppend, you consent to the practices detailed in our Privacy Policy, including the processing of text and resumes via third-party AI APIs.
         </p>
       </section>
 
@@ -50,7 +50,7 @@ export default function TermsPage() {
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4">5. Disclaimer of Warranties</h2>
         <p>
-          ApplyFlow makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.
+          Uppend makes no warranties, expressed or implied, and hereby disclaims and negates all other warranties including, without limitation, implied warranties or conditions of merchantability, fitness for a particular purpose, or non-infringement of intellectual property or other violation of rights.
         </p>
       </section>
 

@@ -11,7 +11,7 @@ export function sendOperatorAlert(subject: string, html: string) {
   verifyEmailTransporter().then((isValid) => {
     if (!isValid) return;
     return emailTransporter.sendMail({
-      from: `"ApplyFlow Alerts" <${process.env.SMTP_EMAIL}>`,
+      from: `"Uppend Alerts" <${process.env.SMTP_EMAIL}>`,
       to: process.env.ALERT_EMAIL,
       subject,
       html

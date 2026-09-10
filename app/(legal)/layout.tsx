@@ -11,7 +11,7 @@ export default function LegalLayout({
       <header className="px-4 py-6 border-b border-gray-200 dark:border-zinc-800">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
-            ApplyFlow
+            Uppend
           </div>
           <Link href="/" className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back to Home
