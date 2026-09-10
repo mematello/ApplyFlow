@@ -1,7 +1,7 @@
-# ApplyFlow — Project Overview
+# Uppend — Project Overview
 
 ## What it is
-ApplyFlow is an AI-powered job application tracker that turns a pasted job posting into a structured, trackable application — complete with an AI-generated fit assessment against your resume.
+Uppend is an AI-powered job application tracker that turns a pasted job posting into a structured, trackable application — complete with an AI-generated fit assessment against your resume.
 
 ## Who it's for
 Job seekers who want to streamline tracking their applications, avoid manually re-typing job descriptions, and quickly assess whether a role is worth applying to.
@@ -19,5 +19,5 @@ Job seekers who want to streamline tracking their applications, avoid manually r
 - **Notifications:** Gmail SMTP/nodemailer for email reminders
 
 ## Non-goals
-- Automating the actual submission of applications on company portals (ApplyFlow is strictly for tracking and assessment).
+- Automating the actual submission of applications on company portals (Uppend is strictly for tracking and assessment).
 - Serving as a resume builder or editor (users upload their existing resumes).

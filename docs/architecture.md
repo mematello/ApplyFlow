@@ -1,4 +1,4 @@
-# ApplyFlow — Architecture
+# Uppend — Architecture
 
 ## High-level structure
 ```text

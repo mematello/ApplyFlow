@@ -8,14 +8,14 @@ export function CookieConsentBanner() {
 
   useEffect(() => {
     // Check if user has already dismissed the banner
-    const hasConsented = localStorage.getItem('applyflow_cookie_consent');
+    const hasConsented = localStorage.getItem('uppend_cookie_consent');
     if (!hasConsented) {
       setShowBanner(true);
     }
   }, []);
 
   const handleDismiss = () => {
-    localStorage.setItem('applyflow_cookie_consent', 'true');
+    localStorage.setItem('uppend_cookie_consent', 'true');
     setShowBanner(false);
   };
 

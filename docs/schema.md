@@ -1,4 +1,4 @@
-# ApplyFlow Database Schema
+# Uppend Database Schema
 
 This document is a snapshot of the actual PostgreSQL database schema as generated from the `supabase/migrations/` files.
 

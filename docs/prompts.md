@@ -1,4 +1,4 @@
-# ApplyFlow System Prompts
+# Uppend System Prompts
 
 This file is a snapshot of the exact system prompts currently used in the application.
 
