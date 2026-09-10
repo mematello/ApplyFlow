@@ -1,4 +1,22 @@
-# ApplyFlow — Decisions Log
+# Uppend — Decisions Log
+
+## [2026-09-10] Uppend Name Selection
+- Context: Rebranding the application.
+- Decision: Chose "Uppend" after investigating that "ApplyFlow" was already taken. Confirmed npm package name availability, no conflicting SaaS/consumer product found, informal search found no trademark conflict (formal USPTO clearance search not performed).
+
+## [2026-09-10] Rebrand Scope Constraints
+- Context: Defining the bounds of the rebranding effort.
+- Decision: Repo rename, Vercel project rename, and Supabase project_id label were deliberately deferred/excluded. Repo and Vercel renames are pending manual updates to match the live rebrand. The Supabase label was intentionally left as `applyFlow` permanently since it's internal-only and never user-facing, not worth the churn.
+
+## [2026-09-10] IndexedDB Migration over Silent Break
+- Context: The IndexedDB `DB_NAME` needed to be changed due to the rebrand.
+- Decision: Implemented a migration rather than a silent break.
+- Reasoning: Local Mode is a public no-signup feature, meaning other people's browsers may hold data under the old name, not just the admin's. A migration prevents data loss for these users.
+
+## [2026-09-10] Gmail Address Migration Approach
+- Context: Migrating to a new Gmail address for SMTP following the rebrand.
+- Decision: Used Google's account-rename feature (which preserves account history and alias, not a cold new mailbox) rather than creating a new account from scratch.
+- Reasoning: Specifically chosen to avoid restarting SPF/DKIM and sender reputation from zero.
 
 ## [2026-09-09] Dashboard Applications Caching Strategy
 - Context: Dashboard load time was impacted by sequential, uncached Supabase queries.

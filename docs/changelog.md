@@ -1,4 +1,12 @@
-# ApplyFlow — Changelog
+# Uppend — Changelog
+
+## [2026-09-10] (Session 15)
+- Implemented: Rebranded "ApplyFlow" to "Uppend" across UI copy, metadata, legal pages, email display names, docs, and local storage keys, merged to main via a standard `--no-ff` merge commit from `rebrand/uppend` (branch left intact, not deleted).
+- Implemented: A one-time idempotent IndexedDB migration (`migrateLegacyDb()` in `lib/local/db.ts`) moving data from the legacy `applyflow_local` database to `uppend_local`, using `onupgradeneeded` presence-detection and a write-then-confirm-then-delete safety ordering with `put` for idempotency.
+- Confirmed: via full `npm run build` output that the merge to main compiles cleanly, with pre-existing lint warnings unrelated to this change.
+- Implemented: Completed the Gmail sender address migration (new address now live across Vercel env vars and Supabase Auth SMTP settings), verified via real magic-link and reminder email sends.
+- Note: The sender address change is now done, separate from the email display name change (already shipped in the rebrand branch itself).
+- Note: Discovered two related issues during manual testing, not yet fixed: (1) after account deletion, browser back-navigation can restore a stale bfcache'd settings page that shows a false "Saved!" toast on an actually-unauthorized request (confirmed via DB check that no data was written — server-side protection held, client-side feedback is misleading); (2) `/migrate` runs unconditionally after any successful magic-link auth (login or signup, no distinction), silently merging local IndexedDB data into whichever account just authenticated, with no confirmation prompt.
 
 ## [2026-09-09] (Session 14)
 - Implemented: Cached the dashboard applications query using Next.js `unstable_cache` (tagged by `user_id` with a 60s fallback revalidation). Utilized the service-role client within the cache closure to bypass Next.js dynamic API constraints, relying entirely on explicit `.eq('user_id', userId)` scoping for security.

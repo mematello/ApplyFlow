@@ -19,9 +19,12 @@ export default function Home() {
       
       {/* Header */}
       <header className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 sm:px-6 py-4 max-w-7xl mx-auto w-full">
-        <div className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent w-full sm:w-auto text-center sm:text-left">
-          Uppend
-        </div>
+        <Link href="/" className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
+          <Image src="/images/uppend-logo.jpg" alt="Uppend Logo" width={32} height={32} className="rounded-md object-contain shadow-sm" />
+          <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+            Uppend
+          </span>
+        </Link>
         <nav className="flex flex-wrap justify-center sm:justify-end items-center gap-2 sm:gap-4 w-full sm:w-auto">
           <ThemeToggle />
           <Link href="/login" className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-sm font-medium hover:text-blue-600 transition-colors">
