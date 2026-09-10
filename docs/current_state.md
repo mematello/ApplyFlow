@@ -7,10 +7,11 @@ decisions.md instead. Replaces the handoff_context_sessionN.md chain.
 See architecture.md / decisions.md / schema.md / changelog.md for
 anything not called out below as recently changed.*
 
-*Last updated: 2026-09-08 (Session 13)*
+*Last updated: 2026-09-09 (Session 14)*
 
 ## 1. Confirmed working / shipped
 
+- **Dashboard Performance Improvements:** Cached the dashboard applications query and parallelized it with the profile fetch to eliminate sequential round-trips. Cache is instantly invalidated on any mutation.
 - **Ghosted status validation & UI parity:** Added `'ghosted'` to API Zod validation schemas (`PatchSchema`, `ApplicationInsertSchema`) and frontend dropdown menus in `/new` and `/applications/[id]`, fixing 400 Bad Request errors when saving applications in ghosted status.
 - **Source field dropdown:** Source field converted to dropdown (LinkedIn/Indeed/JobStreet/Facebook/Company Website/Referral/Other) with free-text fallback and AI auto-match. No DB/schema changes; `/api/extract` untouched.
 - **Removed stale Resend-sandbox copy:** Cleaned up `login/page.tsx` and `signup/page.tsx` error fallbacks, merged privacy-policy bullet into Gmail SMTP entry.
@@ -20,6 +21,7 @@ anything not called out below as recently changed.*
 
 ## 2. Open / blocking
 
+- **Shared DB Environment Gap:** Testing branches currently risks polluting production data. We need to formalize separated environments (e.g., local mock or staging database).
 - **Legal Pages:** `/terms` and `/privacy` are still draft-pending lawyer review. Discretionary, user's call on launch timing.
 
 ## 3. Next steps, priority order

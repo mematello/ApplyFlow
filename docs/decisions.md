@@ -1,5 +1,19 @@
 # ApplyFlow — Decisions Log
 
+## [2026-09-09] Dashboard Applications Caching Strategy
+- Context: Dashboard load time was impacted by sequential, uncached Supabase queries.
+- Decision: Wrapped the applications query in Next.js `unstable_cache` tagged by `user_id`, and added `revalidateTag` to all mutation routes. 
+- Decision: Used the `serviceClient` inside the cache closure instead of the standard cookie-based client. This intentionally bypasses RLS because Next.js prohibits dynamic functions like `cookies()` inside `unstable_cache`. Security relies entirely on the explicit `.eq('user_id', userId)` scoping in the query.
+
+## [2026-09-09] Dashboard Data Fetch Parallelization
+- Context: The dashboard sequentially fetched the user profile and then the applications query.
+- Decision: Parallelized both queries using `Promise.all`.
+- Trade-offs: A brand-new user with no profile will now trigger an applications fetch (and populate an empty cache entry) before being redirected to `/onboarding`. This small unnecessary work for an edge case was accepted for the performance gains of concurrency on all normal dashboard loads.
+
+## [2026-09-09] Shared DB Environment Gap
+- Context: Manual verification of feature branches currently happens against the live production database environment.
+- Decision: Flagged this as a significant gap. Testing against production risks accidental mutations or lingering test data (e.g. test applications). Moving forward, we need to separate environments (using synthetic local/mock data or a dedicated staging instance) to isolate testing from live data.
+
 ## [2026-09-08] Source field dropdown design
 - Context: Source field needed to be converted from free text to a dropdown.
 - Decision: Chose dropdown+free-text-fallback with substring/keyword AI-auto-match over a strict fixed dropdown. Rejected two keywords ("direct", "meta") from the initial keyword list during plan review for false-positive risk.

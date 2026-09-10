@@ -1,5 +1,10 @@
 # ApplyFlow — Changelog
 
+## [2026-09-09] (Session 14)
+- Implemented: Cached the dashboard applications query using Next.js `unstable_cache` (tagged by `user_id` with a 60s fallback revalidation). Utilized the service-role client within the cache closure to bypass Next.js dynamic API constraints, relying entirely on explicit `.eq('user_id', userId)` scoping for security.
+- Implemented: Added immediate on-demand cache invalidation (`revalidateTag`) to all four application mutation routes (POST, PATCH, DELETE, migrate) to purge the dashboard cache on any write.
+- Implemented: Parallelized the user profile and cached applications fetches in the dashboard using `Promise.all`, removing a full sequential round-trip during page load.
+
 ## [2026-09-08] (Session 13)
 - Fixed: ghosted status update failure — added to PatchSchema and ApplicationInsertSchema in both app/api/applications/[id]/route.ts and app/api/applications/route.ts; added the missing dropdown option to ApplicationDetailClient.tsx and new/page.tsx.
 - Implemented: Source field converted from free text to a dropdown (LinkedIn/Indeed/JobStreet/Facebook/Company Website/Referral/Other) with free-text fallback, plus AI auto-match on extraction via new lib/constants.ts (SOURCE_OPTIONS, matchSourceOption). No DB/schema changes; /api/extract untouched.
