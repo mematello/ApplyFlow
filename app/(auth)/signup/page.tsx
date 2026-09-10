@@ -39,7 +39,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${location.origin}/auth/callback`,
+        emailRedirectTo: `${location.origin}/auth/callback?intent=signup`,
         shouldCreateUser: true,
       },
     });
@@ -71,7 +71,7 @@ export default function SignupPage() {
           You successfully authenticated in another tab. You can safely close this tab or continue to your account.
         </p>
         <Link 
-          href="/migrate" 
+          href="/migrate?intent=signup" 
           className="w-full rounded bg-blue-600 p-3 text-white font-medium hover:bg-blue-700 transition-colors shadow-sm"
         >
           Continue to Dashboard

@@ -95,6 +95,22 @@ export default function SettingsClient({
   const [isLoadingModels, setIsLoadingModels] = useState(true);
 
   useEffect(() => {
+    const handlePageShow = async (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) {
+          window.location.href = '/login?message=Session+expired.+Please+log+in+again.';
+        }
+      }
+    };
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => {
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [supabase.auth]);
+
+  useEffect(() => {
     setMounted(true);
     const fetchModels = async () => {
       try {
